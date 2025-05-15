@@ -7,6 +7,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 include(FetchContent)
 
+set(BUILD_SHARED_LIBS ON)
+
 FetchContent_Declare(
   PDFHummus
   URL https://github.com/galkahana/PDF-Writer/archive/refs/tags/v4.6.2.tar.gz
@@ -16,16 +18,39 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(PDFHummus)
 
+include(FetchContent)
+FetchContent_Declare(
+        opencv
+        GIT_REPOSITORY https://github.com/opencv/opencv.git
+        GIT_TAG 4.11.0
+)
+FetchContent_MakeAvailable(opencv)
+
+
 add_executable(proxy_maker)
+
+set_property(TARGET proxy_maker PROPERTY
+             MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 
 target_sources(proxy_maker
         PRIVATE ${PROJECT_SOURCE_DIR}/main.cpp
+        PRIVATE ${PROJECT_SOURCE_DIR}/configuration.cpp
 )
-
-set(${OPENCV_MODULES} ${PROJECT_SOURCE_DIR}/build/_deps/opencv-src/modules)
 
 target_include_directories(proxy_maker 
 PRIVATE ${PROJECT_SOURCE_DIR}/build/_deps/pdfhummus-src
+PRIVATE ${OPENCV_CONFIG_FILE_INCLUDE_DIR}
+PRIVATE ${OPENCV_MODULE_opencv_core_LOCATION}/include
+PRIVATE ${OPENCV_MODULE_opencv_imgcodecs_LOCATION}/include
 )
 
-target_link_libraries (proxy_maker PDFHummus::PDFWriter)
+#target_link_directories(proxy_maker 
+#PRIVATE ${PROJECT_SOURCE_DIR}/opencv/build/lib/$<CONFIG>/
+#)
+
+target_link_libraries (proxy_maker 
+PDFHummus::PDFWriter
+opencv_imgcodecs
+opencv_core
+opencv_imgproc
+)
