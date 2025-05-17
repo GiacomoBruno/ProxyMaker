@@ -9,13 +9,11 @@
 #include "PDFWriter/PageContentContext.h"
 #include "opencv2/imgcodecs.hpp"
 #include "json.h"
-
-/*
-TODO:
-1. maybe add image downloader
-*/
+#include <syncstream>
+#include <format>
 
 using namespace PDFHummus;
+#define SyncOut std::osyncstream{std::cout}
 
 bool IsImageExt(std::filesystem::path const &ext)
 {
@@ -66,12 +64,17 @@ auto CropImages(Configuration const &conf, std::vector<std::filesystem::path> co
                 auto w = img.size().width;
                 auto h = img.size().height;
 
-                auto m = std::min(w / conf.GetCardW(false), h / conf.GetCardH(false));
-                auto c = std::round((conf.GetFullBleed(false) - conf.GetBleed(false)) * m);
-
-                cv::Mat cropped_image = img(cv::Range(c, h - c), cv::Range(c, w - c));
+                auto mW = w / conf.GetFullBleedW(false);
+                auto mH = h / conf.GetFullBleedH(false);
+                auto cW = std::round(((conf.GetFullBleedW(false) - conf.GetCardW(false)) / 2.) * mW);
+                auto cH = std::round(((conf.GetFullBleedH(false) - conf.GetCardH(false)) / 2.) * mH);
+                cW = std::round(cW - (conf.GetBleed(false)*mW));
+                cH = std::round(cH - (conf.GetBleed(false)*mH));
+                cv::Mat cropped_image = img(cv::Range(cH, h - cH), cv::Range(cW, w - cW));
                 auto cropped = out / p.filename();
                 cv::imwrite(cropped.string(), cropped_image);
+                SyncOut << std::format("Image [{}x{}] DPI: {}x{} CROP [{}x{}] BLEED [{}x{}]", w, h, (int)mW, (int)mH, (int)cW, (int)cH, int(conf.GetBleed(false) * mW), (int)(conf.GetBleed(false) * mH)) << std::endl;
+
             }});
     }
 
@@ -86,107 +89,102 @@ auto DrawCross(Configuration const &conf, PageContentContext *cxt, double center
     AbstractContentContext::GraphicOptions gOptions{};
     gOptions.colorValue = 0x00FF00;
     gOptions.drawingType = AbstractContentContext::EDrawingType::eFill;
+    double t = conf.GetBleed(false);
+    double l = conf.GetCrossLength();
+    auto cW = conf.GetCardW(false) / 2.;
+    auto cH = conf.GetCardH(false) / 2.;
+    auto botx = center_x - ((cW + t)*conf.GetPPI());
+    auto boty = center_y - ((cH + t)*conf.GetPPI());
+    auto botx1 = center_x + cW*conf.GetPPI();
+    auto boty1 = center_y + cH*conf.GetPPI();
 
-    auto botx = center_x - conf.GetCardW() / 2. - 1;
-    auto boty = center_y - conf.GetCardH() / 2. - 1;
-    auto botx1 = center_x + conf.GetCardW() / 2.;
-    auto boty1 = center_y + conf.GetCardH() / 2.;
-    auto w = 20.;
-    auto h = 1;
+    auto p = (l / 2.);
+    t = t * conf.GetPPI();
+    cxt->DrawRectangle(botx - p, boty, l, t, gOptions);
+    cxt->DrawRectangle(botx, boty - p, t, l, gOptions);
 
-    cxt->DrawRectangle(botx - (w / 2.), boty, w, h, gOptions);
-    cxt->DrawRectangle(botx, boty - (w / 2.), h, w, gOptions);
-    cxt->DrawRectangle(botx1 - (w / 2.), boty, w, h, gOptions);
-    cxt->DrawRectangle(botx1, boty - (w / 2.), h, w, gOptions);
-    cxt->DrawRectangle(botx - (w / 2.), boty1, w, h, gOptions);
-    cxt->DrawRectangle(botx, boty1 - (w / 2.), h, w, gOptions);
-    cxt->DrawRectangle(botx1 - (w / 2.), boty1, w, h, gOptions);
-    cxt->DrawRectangle(botx1, boty1 - (w / 2.), h, w, gOptions);
+    cxt->DrawRectangle(botx1 - p, boty, l, t, gOptions);
+    cxt->DrawRectangle(botx1, boty - p, t, l, gOptions);
+
+    cxt->DrawRectangle(botx1 - p, boty1, l, t, gOptions);
+    cxt->DrawRectangle(botx1, boty1 - p, t, l, gOptions);
+
+    cxt->DrawRectangle(botx - p, boty1, l, t, gOptions);
+    cxt->DrawRectangle(botx, boty1 - p, t, l, gOptions);
 }
 
-auto GeneratePDF(Configuration const &conf, std::vector<std::filesystem::path> const &images, std::string const &filename)
+auto GeneratePage(Configuration const &conf, PageConfiguration const& pConf, int idx, std::vector<std::filesystem::path> const& images)
 {
-    EStatusCode status = eSuccess;
     PDFWriter pdfWriter;
-    std::cout << "Generating PDF: " << filename << std::endl;
-    status = pdfWriter.StartPDF(filename, ePDFVersion13, LogConfiguration(true, true, ".\\proxy_maker.log"));
-    if (status != eSuccess)
-        return status;
+    pdfWriter.StartPDF(".\\files\\"+std::to_string(idx)+".pdf", ePDFVersion13, LogConfiguration(false, nullptr));
 
-    AbstractContentContext::ImageOptions options{};
-    options.boundingBoxHeight = conf.GetCardH() + conf.GetBleed() * 2;
-    options.boundingBoxWidth = conf.GetCardW() + conf.GetBleed() * 2;
-    options.transformationMethod = AbstractContentContext::EImageTransformation::eFit;
-    options.fitPolicy = AbstractContentContext::EFitPolicy::eAlways;
+    auto page = new PDFPage();
+    page->SetMediaBox(PDFRectangle(0, 0, pConf.PW + conf.GetHorizontalOffset(), pConf.PH + conf.GetVerticalOffset()));
 
-    int idx = 0;
-    PDFPage *page{nullptr};
-    PageContentContext *cxt{nullptr};
+    auto cxt = pdfWriter.StartPageContentContext(page);      
 
-    auto pH = conf.GetPaperH() - conf.GetVerticalOffset();
-    auto pW = conf.GetPaperW() - conf.GetHorizontalOffset();
-
+    int i = 0;
+    for(auto &im : images)
     {
-        auto tot_cards_1 = (int)floor(pW / conf.GetCardWithBleedW()) * (int)floor(pH / conf.GetCardWithBleedH());
-        auto tot_cards_2 = (int)floor(pH / conf.GetCardWithBleedW()) * (int)floor(pW / conf.GetCardWithBleedH());
-        if (tot_cards_2 > tot_cards_1)
-        {
-            pH = conf.GetPaperW() - conf.GetVerticalOffset();
-            pW = conf.GetPaperH() - conf.GetHorizontalOffset();
-        }
-    }
+        //print stuff
+        auto row = ((i % pConf.CardsPerPage) / pConf.Cols);
+        auto col = ((i % pConf.CardsPerPage) % pConf.Cols);
 
-    auto cards_per_column = (int)floor(pW / conf.GetCardWithBleedW());
-    auto cards_per_row = (int)floor(pH / conf.GetCardWithBleedH());
-    auto pbreak = cards_per_column * cards_per_row;
-    for (auto &im : images)
-    {
-        auto row = ((idx % pbreak) / cards_per_column);
-        auto col = ((idx % pbreak) % cards_per_column);
-
-        if (col == 0 && row == 0)
-        {
-            if (cxt != nullptr)
-            {
-                pdfWriter.EndPageContentContext(cxt);
-                pdfWriter.WritePageAndRelease(page);
-            }
-            page = new PDFPage();
-            page->SetMediaBox(PDFRectangle(0, 0, pW + conf.GetHorizontalOffset(), pH + conf.GetVerticalOffset()));
-            cxt = pdfWriter.StartPageContentContext(page);
-        }
-
-        double center_x = pW / cards_per_column * (1 + 2 * col) / 2. + (conf.GetHorizontalOffset() / 2.);
-        double center_y = pH / cards_per_row * (1 + 2 * row) / 2. + (conf.GetVerticalOffset() / 2.);
+        double center_x = pConf.PW / pConf.Cols * (1 + 2 * col) / 2. + (conf.GetHorizontalOffset() / 2.);
+        double center_y = pConf.PH / pConf.Rows * (1 + 2 * row) / 2. + (conf.GetVerticalOffset() / 2.);
 
         double x = center_x - (conf.GetCardWithBleedW() / 2.);
         double y = center_y - (conf.GetCardWithBleedH() / 2.);
 
-        cxt->DrawImage(x, y, im.string(), options);
+        cxt->DrawImage(x, y, im.string(), pConf.Options);
         if (conf.GetDrawCross())
             DrawCross(conf, cxt, center_x, center_y);
 
-        idx++;
+        i++;
     }
+    pdfWriter.EndPageContentContext(cxt);
+    pdfWriter.WritePageAndRelease(page);
+    pdfWriter.EndPDF();
+}
 
-    if (cxt != nullptr)
+auto GeneratePDF(Configuration const &conf, std::vector<std::filesystem::path> const &images, std::string const &filename)
+{
+    std::cout << "Generating PDF: " << filename << std::endl;
+    int idx = 0;
+    PageConfiguration pageConf{conf};
+    std::vector<std::thread> threads{};
+    std::vector<std::filesystem::path> batch{};
+
+    for(int i = 0; i < images.size(); i++)
     {
-        pdfWriter.EndPageContentContext(cxt);
-        pdfWriter.WritePageAndRelease(page);
+        batch.push_back(images[i]);
+
+        if(((i+1)%pageConf.CardsPerPage == 0 && i > 0) || (i == images.size()-1))
+        {
+            threads.push_back(std::thread([&conf, &pageConf, batch, idx](){ GeneratePage(conf, pageConf, idx, batch);}));
+            idx++;
+            batch.clear();
+        }
+
     }
+    
+    for(auto& t: threads)
+        t.join();
 
-    status = pdfWriter.EndPDF();
-    if (status != eSuccess)
-        return status;
-
-    return status;
+    PDFWriter pdfWriter;
+    pdfWriter.StartPDF(filename, ePDFVersion13);
+    for(int i = 0; i < threads.size(); i++)
+    {
+        pdfWriter.AppendPDFPagesFromPDF(".\\files\\"+ std::to_string(i)+".pdf",PDFPageRange());
+        std::filesystem::remove(".\\files\\"+ std::to_string(i)+".pdf");
+    }
+    pdfWriter.EndPDF(); //unite all generated pdfs
 }
 
 int main(int argc, char **argv)
 {
     Configuration conf{};
     conf.LoadConfiguration(".\\files\\config.json");
-
     CropImages(conf, LoadImages(".\\files\\images\\"), ".\\files\\images\\crop\\");
     GeneratePDF(conf, LoadImages(".\\files\\images\\crop\\"), conf.GetOutputFile());
     conf.SaveConfiguration(".\\files\\config.json");

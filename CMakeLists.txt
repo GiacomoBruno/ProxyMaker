@@ -18,23 +18,27 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(PDFHummus)
 
-include(FetchContent)
 FetchContent_Declare(
         opencv
+        QUIET
         GIT_REPOSITORY https://github.com/opencv/opencv.git
         GIT_TAG 4.11.0
 )
 FetchContent_MakeAvailable(opencv)
 
+FetchContent_Declare(
+        magic_enum
+        GIT_REPOSITORY https://github.com/Neargye/magic_enum.git
+)
+
+FetchContent_Populate(magic_enum)
 
 add_executable(proxy_maker)
-
-set_property(TARGET proxy_maker PROPERTY
-             MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 
 target_sources(proxy_maker
         PRIVATE ${PROJECT_SOURCE_DIR}/main.cpp
         PRIVATE ${PROJECT_SOURCE_DIR}/configuration.cpp
+        PRIVATE ${PROJECT_SOURCE_DIR}/paper.cpp
 )
 
 target_include_directories(proxy_maker 
@@ -42,11 +46,51 @@ PRIVATE ${PROJECT_SOURCE_DIR}/build/_deps/pdfhummus-src
 PRIVATE ${OPENCV_CONFIG_FILE_INCLUDE_DIR}
 PRIVATE ${OPENCV_MODULE_opencv_core_LOCATION}/include
 PRIVATE ${OPENCV_MODULE_opencv_imgcodecs_LOCATION}/include
+PRIVATE ${PROJECT_SOURCE_DIR}/build/_deps/magic_enum-src/include/magic_enum
+PRIVATE ${PROJECT_SOURCE_DIR}/build/_deps/inicpp-src
 )
 
-#target_link_directories(proxy_maker 
-#PRIVATE ${PROJECT_SOURCE_DIR}/opencv/build/lib/$<CONFIG>/
-#)
+add_custom_command(TARGET proxy_maker POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${PROJECT_SOURCE_DIR}/build/_deps/pdfhummus-build/PDFWriter/$<CONFIG>/"
+        $<TARGET_FILE_DIR:proxy_maker>)
+
+add_custom_command(TARGET proxy_maker POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${PROJECT_SOURCE_DIR}/build/_deps/pdfhummus-build/FreeType/$<CONFIG>/"
+        $<TARGET_FILE_DIR:proxy_maker>)
+
+add_custom_command(TARGET proxy_maker POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${PROJECT_SOURCE_DIR}/build/_deps/pdfhummus-build/LibAesgm/$<CONFIG>/"
+        $<TARGET_FILE_DIR:proxy_maker>)
+
+add_custom_command(TARGET proxy_maker POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${PROJECT_SOURCE_DIR}/build/_deps/pdfhummus-build/LibJpeg/$<CONFIG>/"
+        $<TARGET_FILE_DIR:proxy_maker>)
+
+add_custom_command(TARGET proxy_maker POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${PROJECT_SOURCE_DIR}/build/_deps/pdfhummus-build/LibPng/$<CONFIG>/"
+        $<TARGET_FILE_DIR:proxy_maker>)
+
+add_custom_command(TARGET proxy_maker POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${PROJECT_SOURCE_DIR}/build/_deps/pdfhummus-build/LibTiff/$<CONFIG>/"
+        $<TARGET_FILE_DIR:proxy_maker>)
+
+add_custom_command(TARGET proxy_maker POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${PROJECT_SOURCE_DIR}/build/_deps/pdfhummus-build/Zlib/$<CONFIG>/"
+        $<TARGET_FILE_DIR:proxy_maker>)
+        
+if( $<CONFIG> STREQUAL "Release")
+add_custom_command(TARGET proxy_maker POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        $<TARGET_FILE_DIR:proxy_maker>
+        "${PROJECT_SOURCE_DIR}/release/bin/")
+endif()
 
 target_link_libraries (proxy_maker 
 PDFHummus::PDFWriter
