@@ -37,8 +37,11 @@ add_executable(proxy_maker)
 
 target_sources(proxy_maker
         PRIVATE ${PROJECT_SOURCE_DIR}/main.cpp
+        PRIVATE ${PROJECT_SOURCE_DIR}/utility.cpp
         PRIVATE ${PROJECT_SOURCE_DIR}/configuration.cpp
         PRIVATE ${PROJECT_SOURCE_DIR}/paper.cpp
+        PRIVATE ${PROJECT_SOURCE_DIR}/image_processing.cpp
+        PRIVATE ${PROJECT_SOURCE_DIR}/pdf_generation.cpp
 )
 
 target_include_directories(proxy_maker 
@@ -46,8 +49,8 @@ PRIVATE ${PROJECT_SOURCE_DIR}/build/_deps/pdfhummus-src
 PRIVATE ${OPENCV_CONFIG_FILE_INCLUDE_DIR}
 PRIVATE ${OPENCV_MODULE_opencv_core_LOCATION}/include
 PRIVATE ${OPENCV_MODULE_opencv_imgcodecs_LOCATION}/include
+PRIVATE ${OPENCV_MODULE_opencv_imgproc_LOCATION}/include
 PRIVATE ${PROJECT_SOURCE_DIR}/build/_deps/magic_enum-src/include/magic_enum
-PRIVATE ${PROJECT_SOURCE_DIR}/build/_deps/inicpp-src
 )
 
 add_custom_command(TARGET proxy_maker POST_BUILD
@@ -85,12 +88,12 @@ add_custom_command(TARGET proxy_maker POST_BUILD
         "${PROJECT_SOURCE_DIR}/build/_deps/pdfhummus-build/Zlib/$<CONFIG>/"
         $<TARGET_FILE_DIR:proxy_maker>)
         
-if( $<CONFIG> STREQUAL "Release")
+#https://github.com/xinntao/Real-ESRGAN-ncnn-vulkan.git
+
 add_custom_command(TARGET proxy_maker POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         $<TARGET_FILE_DIR:proxy_maker>
         "${PROJECT_SOURCE_DIR}/release/bin/")
-endif()
 
 target_link_libraries (proxy_maker 
 PDFHummus::PDFWriter

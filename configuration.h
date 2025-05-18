@@ -5,7 +5,13 @@
 #include "PDFWriter/PageContentContext.h"
 #include "paper.h"
 
-//everything in inches becasue MTG is us based (sigh.)
+//everything in inches becasue MTG is U.S. based (sigh.)
+
+#define IMAGE_FOLDER ".\\files\\images\\"
+#define SCRYFALL_FOLDER IMAGE_FOLDER "scryfall\\"
+#define SCRYFALL_UPSCALED_FOLDER SCRYFALL_FOLDER "upscaled\\"
+#define SCRYFALL_BLEEDED_FOLDER SCRUFALL_FOLDER "bleeded\\"
+
 
 struct CardMeasures
 {
@@ -18,7 +24,7 @@ struct CardMeasures
 
 };
 
-constexpr CardMeasures MeasuresMPCFill{.SafeW = 2.48, .SafeH = 3.46, .AdditionalSafe = 0.00, .BleedSize = 0.03, .FullBleedSizeW = 2.74, .FullBleedSizeH = 3.74};
+constexpr CardMeasures MeasuresMPCFill{.SafeW = 2.48, .SafeH = 3.49, .AdditionalSafe = 0.00, .BleedSize = 0.03, .FullBleedSizeW = 2.74, .FullBleedSizeH = 3.74};
 
 struct Configuration
 {
@@ -78,8 +84,8 @@ struct PageConfiguration
         Rows = (int)floor(PH / conf.GetCardH());
 
         CardsPerPage = Cols * Rows;
-        Options.boundingBoxHeight = conf.GetCardH() + conf.GetBleed() * 2;
-        Options.boundingBoxWidth = conf.GetCardW() + conf.GetBleed() * 2;
+        Options.boundingBoxHeight = conf.GetCardWithBleedH();
+        Options.boundingBoxWidth = conf.GetCardWithBleedW();
         Options.transformationMethod = AbstractContentContext::EImageTransformation::eFit;
         Options.fitPolicy = AbstractContentContext::EFitPolicy::eAlways;
 
