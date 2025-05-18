@@ -25,8 +25,6 @@ void CropImages(Configuration const &conf, std::vector<std::filesystem::path> co
 
                 cv::Mat cropped_image = img(cv::Range(toCrop, h - toCrop), cv::Range(toCrop, w - toCrop));
                 auto cropped = out / p.filename();
-                cv::OutputArray array{};
-                cropped_image.convertTo(array, -1);
 
                 cv::imwrite(cropped.string(), cropped_image);
             }});

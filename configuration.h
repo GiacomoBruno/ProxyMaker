@@ -7,11 +7,13 @@
 
 //everything in inches becasue MTG is U.S. based (sigh.)
 
-#define IMAGE_FOLDER ".\\files\\images\\"
+#define FILES_FOLDER ".\\files\\"
+#define IMAGE_FOLDER FILES_FOLDER "images\\"
+#define CROP_FOLDER IMAGE_FOLDER "crop\\"
 #define SCRYFALL_FOLDER IMAGE_FOLDER "scryfall\\"
 #define SCRYFALL_UPSCALED_FOLDER SCRYFALL_FOLDER "upscaled\\"
 #define SCRYFALL_BLEEDED_FOLDER SCRUFALL_FOLDER "bleeded\\"
-
+#define CONFIG_FILE "config.json"
 
 struct CardMeasures
 {
