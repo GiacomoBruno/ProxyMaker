@@ -11,9 +11,11 @@
 #define IMAGE_FOLDER FILES_FOLDER "images\\"
 #define CROP_FOLDER IMAGE_FOLDER "crop\\"
 #define SCRYFALL_FOLDER IMAGE_FOLDER "scryfall\\"
-#define SCRYFALL_UPSCALED_FOLDER SCRYFALL_FOLDER "upscaled\\"
-#define SCRYFALL_BLEEDED_FOLDER SCRUFALL_FOLDER "bleeded\\"
+#define SCRYFALL_INPUT_FOLDER SCRYFALL_FOLDER "input"
+#define SCRYFALL_UPSCALED_FOLDER SCRYFALL_FOLDER "upscaled"
+#define SCRYFALL_BLEEDED_FOLDER SCRYFALL_FOLDER "bleeded\\"
 #define CONFIG_FILE "config.json"
+#define MODELS_FOLDER FILES_FOLDER "models\\"
 
 struct CardMeasures
 {
@@ -74,7 +76,7 @@ struct PageConfiguration
 
         {
             auto tot_cards_1 = (int)floor(PW / conf.GetCardW()) * (int)floor(PH / conf.GetCardH());
-            auto tot_cards_2 = (int)floor(PH / conf.GetCardH()) * (int)floor(PW / conf.GetCardW());
+            auto tot_cards_2 = (int)floor(PW / conf.GetCardH()) * (int)floor(PH / conf.GetCardW());
             if (tot_cards_2 > tot_cards_1)
             {
                 PH = conf.GetPaperW() - conf.GetHorizontalOffset();

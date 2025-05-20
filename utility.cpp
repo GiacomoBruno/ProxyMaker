@@ -1,4 +1,5 @@
 #include "utility.h"
+#include <iostream>
 
 bool IsImageExt(std::filesystem::path const &ext)
 {
@@ -20,7 +21,8 @@ std::string FromWstring(std::wstring const &wide)
 std::vector<std::filesystem::path> LoadImages(std::filesystem::path const &folder)
 {
     std::vector<std::filesystem::path> res{};
-    if(!std::filesystem::exists(folder)) return {};
+    if (!std::filesystem::exists(folder))
+        return {};
     for (auto p : std::filesystem::directory_iterator{folder})
     {
         if (std::filesystem::is_regular_file(p) && IsImageExt(p.path().extension()))
@@ -32,4 +34,33 @@ std::vector<std::filesystem::path> LoadImages(std::filesystem::path const &folde
         }
     }
     return res;
+}
+
+bool RunCommand(std::string const &command, bool quiet)
+{
+    std::cout << "Running command: " << command << std::endl;
+
+    char psBuffer[128];
+    FILE *pPipe;
+
+    if ((pPipe = _popen(command.c_str(), "rt")) == NULL)
+        return false;
+
+    if (!quiet)
+    {
+        while (fgets(psBuffer, 128, pPipe))
+        {
+            std::cout << psBuffer;
+        }
+    }
+    int result = 0;
+    if (feof(pPipe))
+    {
+        result = _pclose(pPipe);
+        if (!quiet)
+            std::cout << "\nProcess returned "
+                      << result << std::endl;
+    }
+
+    return result == 0;
 }

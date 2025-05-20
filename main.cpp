@@ -6,7 +6,7 @@
 using namespace PDFHummus;
 
 
-int main(int argc, char **argv)
+int wmain(int argc, wchar_t **argv)
 {
     Configuration conf{};
     conf.LoadConfiguration(FILES_FOLDER CONFIG_FILE);

@@ -5,6 +5,7 @@
 #include <iostream>
 #include <thread>
 #include <vector>
+#include "BS_thread_pool.hpp"
 
 #define SyncOut std::osyncstream{std::cout}
 
@@ -78,31 +79,30 @@ void GeneratePDF(Configuration const &conf, std::vector<std::filesystem::path> c
     std::cout << "Generating PDF: " << filename << std::endl;
     int idx = 0;
     PageConfiguration pageConf{conf};
-    std::vector<std::thread> threads{};
     std::vector<std::filesystem::path> batch{};
-
+    BS::thread_pool pool{12};
     for(int i = 0; i < images.size(); i++)
     {
         batch.push_back(images[i]);
 
         if(((i+1)%pageConf.CardsPerPage == 0 && i > 0) || (i == images.size()-1))
         {
-            threads.push_back(std::thread([&conf, &pageConf, batch, idx](){ GeneratePage(conf, pageConf, idx, batch);}));
+            std::ignore = pool.submit_task([&conf, &pageConf, batch, idx](){ GeneratePage(conf, pageConf, idx, batch);});
             idx++;
             batch.clear();
         }
 
     }
     
-    for(auto& t: threads)
-        t.join();
+    pool.wait();
 
     PDFWriter pdfWriter;
     pdfWriter.StartPDF(filename, ePDFVersion13);
-    for(int i = 0; i < threads.size(); i++)
+    for(int i = 0; i < idx; i++)
     {
         pdfWriter.AppendPDFPagesFromPDF(".\\files\\"+ std::to_string(i)+".pdf",PDFPageRange());
         std::filesystem::remove(".\\files\\"+ std::to_string(i)+".pdf");
     }
     pdfWriter.EndPDF(); //unite all generated pdfs
+    std::cout << "PDF generation complete!" << std::endl;
 }

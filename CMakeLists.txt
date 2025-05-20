@@ -33,6 +33,24 @@ FetchContent_Declare(
 
 FetchContent_Populate(magic_enum)
 
+FetchContent_Declare(
+    ESRGAN
+    URL https://github.com/xinntao/Real-ESRGAN-ncnn-vulkan/releases/download/v0.2.0/realesrgan-ncnn-vulkan-v0.2.0-windows.zip
+    DOWNLOAD_EXTRACT_TIMESTAMP FALSE
+
+)
+
+FetchContent_Populate(ESRGAN)
+
+FetchContent_Declare(
+    ThreadPool
+    GIT_REPOSITORY https://github.com/bshoshany/thread-pool.git
+    DOWNLOAD_EXTRACT_TIMESTAMP FALSE
+)
+
+FetchContent_Populate(ThreadPool)
+
+
 add_executable(proxy_maker)
 
 target_sources(proxy_maker
@@ -51,6 +69,7 @@ PRIVATE ${OPENCV_MODULE_opencv_core_LOCATION}/include
 PRIVATE ${OPENCV_MODULE_opencv_imgcodecs_LOCATION}/include
 PRIVATE ${OPENCV_MODULE_opencv_imgproc_LOCATION}/include
 PRIVATE ${PROJECT_SOURCE_DIR}/build/_deps/magic_enum-src/include/magic_enum
+PRIVATE ${PROJECT_SOURCE_DIR}/build/_deps/threadpool-src/include/
 )
 
 add_custom_command(TARGET proxy_maker POST_BUILD
@@ -88,12 +107,28 @@ add_custom_command(TARGET proxy_maker POST_BUILD
         "${PROJECT_SOURCE_DIR}/build/_deps/pdfhummus-build/Zlib/$<CONFIG>/"
         $<TARGET_FILE_DIR:proxy_maker>)
         
-#https://github.com/xinntao/Real-ESRGAN-ncnn-vulkan.git
+add_custom_command(TARGET proxy_maker POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+    "${PROJECT_SOURCE_DIR}/build/_deps/esrgan-src/realesrgan-ncnn-vulkan.exe"
+    $<TARGET_FILE_DIR:proxy_maker>)
+
+add_custom_command(TARGET proxy_maker POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+    "${PROJECT_SOURCE_DIR}/build/_deps/esrgan-src/vcomp140.dll"
+    $<TARGET_FILE_DIR:proxy_maker>)
+
+add_custom_command(TARGET proxy_maker POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+    "${PROJECT_SOURCE_DIR}/build/_deps/esrgan-src/vcomp140d.dll"
+    $<TARGET_FILE_DIR:proxy_maker>)
 
 add_custom_command(TARGET proxy_maker POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         $<TARGET_FILE_DIR:proxy_maker>
         "${PROJECT_SOURCE_DIR}/release/bin/")
+
+
+        
 
 target_link_libraries (proxy_maker 
 PDFHummus::PDFWriter
