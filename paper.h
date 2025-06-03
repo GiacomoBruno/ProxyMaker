@@ -22,5 +22,5 @@ struct Paper
 constexpr Paper A4_Paper{.W{8.3},.H{11.7}};
 constexpr Paper A5_Paper{.W{5.8},.H{8.3}};
 constexpr Paper A6_Paper{.W{4.1},.H{5.8}};
-constexpr Paper _10_15_Paper{.W{4.},.H{6.}};
+constexpr Paper _10_15_Paper{.W{3.9370},.H{5.90551}};
 constexpr Paper _13_18_Paper{.W{5.},.H{7.}};

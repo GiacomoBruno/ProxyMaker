@@ -7,15 +7,25 @@
 
 //everything in inches becasue MTG is U.S. based (sigh.)
 
-#define FILES_FOLDER ".\\files\\"
-#define IMAGE_FOLDER FILES_FOLDER "images\\"
-#define CROP_FOLDER IMAGE_FOLDER "crop\\"
-#define SCRYFALL_FOLDER IMAGE_FOLDER "scryfall\\"
+#define FILES_FOLDER "/files/"
+#define BIN_FOLDER "/bin/"
+#define IMAGE_FOLDER FILES_FOLDER "images/"
+#define CROP_FOLDER IMAGE_FOLDER "crop/"
+#define SCRYFALL_FOLDER IMAGE_FOLDER "scryfall/"
 #define SCRYFALL_INPUT_FOLDER SCRYFALL_FOLDER "input"
 #define SCRYFALL_UPSCALED_FOLDER SCRYFALL_FOLDER "upscaled"
-#define SCRYFALL_BLEEDED_FOLDER SCRYFALL_FOLDER "bleeded\\"
+#define SCRYFALL_BLEEDED_FOLDER SCRYFALL_FOLDER "bleeded/"
 #define CONFIG_FILE "config.json"
-#define MODELS_FOLDER FILES_FOLDER "models\\"
+#define MODELS_FOLDER FILES_FOLDER "models/"
+
+struct WorkFolder
+{
+    std::filesystem::path WF;
+
+    std::filesystem::path Get(char const* pth) const { 
+        
+        return WF.string() + pth; }
+};
 
 struct CardMeasures
 {
@@ -41,7 +51,8 @@ private:
     double PPI{300.};
     double CrossThickness{0.01};
     double CrossLength{0.1};
-    std::string OutputFile{".\\files\\output.pdf"};
+    std::string OutputFile{FILES_FOLDER"output.pdf"};
+    public: WorkFolder WF;
     
 public:
     void LoadConfiguration(std::filesystem::path const& confFile);
@@ -75,8 +86,8 @@ struct PageConfiguration
         PW = conf.GetPaperW() - conf.GetHorizontalOffset();
 
         {
-            auto tot_cards_1 = (int)floor(PW / conf.GetCardW()) * (int)floor(PH / conf.GetCardH());
-            auto tot_cards_2 = (int)floor(PW / conf.GetCardH()) * (int)floor(PH / conf.GetCardW());
+            auto tot_cards_1 = (int)floor(PW / conf.GetCardWithBleedW()) * (int)floor(PH / conf.GetCardWithBleedH());
+            auto tot_cards_2 = (int)floor(PW / conf.GetCardWithBleedH()) * (int)floor(PH / conf.GetCardWithBleedW());
             if (tot_cards_2 > tot_cards_1)
             {
                 PH = conf.GetPaperW() - conf.GetHorizontalOffset();

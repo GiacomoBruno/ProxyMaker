@@ -43,7 +43,7 @@ void DrawCross(Configuration const &conf, PageContentContext *cxt, double center
 void GeneratePage(Configuration const &conf, PageConfiguration const& pConf, int idx, std::vector<std::filesystem::path> const& images)
 {
     PDFWriter pdfWriter;
-    pdfWriter.StartPDF(".\\files\\"+std::to_string(idx)+".pdf", ePDFVersion13, LogConfiguration(false, nullptr));
+    pdfWriter.StartPDF(conf.WF.Get(FILES_FOLDER).string()+std::to_string(idx)+".pdf", ePDFVersion13, LogConfiguration(false, nullptr));
 
     auto page = new PDFPage();
     page->SetMediaBox(PDFRectangle(0, 0, pConf.PW + conf.GetHorizontalOffset(), pConf.PH + conf.GetVerticalOffset()));
@@ -100,8 +100,8 @@ void GeneratePDF(Configuration const &conf, std::vector<std::filesystem::path> c
     pdfWriter.StartPDF(filename, ePDFVersion13);
     for(int i = 0; i < idx; i++)
     {
-        pdfWriter.AppendPDFPagesFromPDF(".\\files\\"+ std::to_string(i)+".pdf",PDFPageRange());
-        std::filesystem::remove(".\\files\\"+ std::to_string(i)+".pdf");
+        pdfWriter.AppendPDFPagesFromPDF(conf.WF.Get(FILES_FOLDER).string() + std::to_string(i)+".pdf",PDFPageRange());
+        std::filesystem::remove(conf.WF.Get(FILES_FOLDER).string()+ std::to_string(i)+".pdf");
     }
     pdfWriter.EndPDF(); //unite all generated pdfs
     std::cout << "PDF generation complete!" << std::endl;

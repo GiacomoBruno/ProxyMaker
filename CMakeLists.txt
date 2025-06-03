@@ -43,13 +43,19 @@ FetchContent_Declare(
 FetchContent_Populate(ESRGAN)
 
 FetchContent_Declare(
+    ESRGAN_MAC
+    URL https://github.com/xinntao/Real-ESRGAN-ncnn-vulkan/releases/download/v0.2.0/realesrgan-ncnn-vulkan-v0.2.0-macos.zip
+    DOWNLOAD_EXTRACT_TIMESTAMP FALSE
+)
+
+FetchContent_Populate(ESRGAN_MAC)
+FetchContent_Declare(
     ThreadPool
     GIT_REPOSITORY https://github.com/bshoshany/thread-pool.git
     DOWNLOAD_EXTRACT_TIMESTAMP FALSE
 )
 
 FetchContent_Populate(ThreadPool)
-
 
 add_executable(proxy_maker)
 
@@ -60,6 +66,7 @@ target_sources(proxy_maker
         PRIVATE ${PROJECT_SOURCE_DIR}/paper.cpp
         PRIVATE ${PROJECT_SOURCE_DIR}/image_processing.cpp
         PRIVATE ${PROJECT_SOURCE_DIR}/pdf_generation.cpp
+        PRIVATE ${PROJECT_SOURCE_DIR}/scryfall.cpp
 )
 
 target_include_directories(proxy_maker 
@@ -74,42 +81,47 @@ PRIVATE ${PROJECT_SOURCE_DIR}/build/_deps/threadpool-src/include/
 
 add_custom_command(TARGET proxy_maker POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${PROJECT_SOURCE_DIR}/build/_deps/pdfhummus-build/PDFWriter/$<CONFIG>/"
+        "${PROJECT_SOURCE_DIR}/build/_deps/pdfhummus-build/PDFWriter/"
         $<TARGET_FILE_DIR:proxy_maker>)
 
 add_custom_command(TARGET proxy_maker POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${PROJECT_SOURCE_DIR}/build/_deps/pdfhummus-build/FreeType/$<CONFIG>/"
+        "${PROJECT_SOURCE_DIR}/build/_deps/pdfhummus-build/FreeType/"
         $<TARGET_FILE_DIR:proxy_maker>)
 
 add_custom_command(TARGET proxy_maker POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${PROJECT_SOURCE_DIR}/build/_deps/pdfhummus-build/LibAesgm/$<CONFIG>/"
+        "${PROJECT_SOURCE_DIR}/build/_deps/pdfhummus-build/LibAesgm/"
         $<TARGET_FILE_DIR:proxy_maker>)
 
 add_custom_command(TARGET proxy_maker POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${PROJECT_SOURCE_DIR}/build/_deps/pdfhummus-build/LibJpeg/$<CONFIG>/"
+        "${PROJECT_SOURCE_DIR}/build/_deps/pdfhummus-build/LibJpeg/"
         $<TARGET_FILE_DIR:proxy_maker>)
 
 add_custom_command(TARGET proxy_maker POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${PROJECT_SOURCE_DIR}/build/_deps/pdfhummus-build/LibPng/$<CONFIG>/"
+        "${PROJECT_SOURCE_DIR}/build/_deps/pdfhummus-build/LibPng/"
         $<TARGET_FILE_DIR:proxy_maker>)
 
 add_custom_command(TARGET proxy_maker POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${PROJECT_SOURCE_DIR}/build/_deps/pdfhummus-build/LibTiff/$<CONFIG>/"
+        "${PROJECT_SOURCE_DIR}/build/_deps/pdfhummus-build/LibTiff/"
         $<TARGET_FILE_DIR:proxy_maker>)
 
 add_custom_command(TARGET proxy_maker POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${PROJECT_SOURCE_DIR}/build/_deps/pdfhummus-build/Zlib/$<CONFIG>/"
+        "${PROJECT_SOURCE_DIR}/build/_deps/pdfhummus-build/Zlib/"
         $<TARGET_FILE_DIR:proxy_maker>)
         
 add_custom_command(TARGET proxy_maker POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy
     "${PROJECT_SOURCE_DIR}/build/_deps/esrgan-src/realesrgan-ncnn-vulkan.exe"
+    $<TARGET_FILE_DIR:proxy_maker>)
+
+add_custom_command(TARGET proxy_maker POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+    "${PROJECT_SOURCE_DIR}/build/_deps/esrgan_mac-src/realesrgan-ncnn-vulkan"
     $<TARGET_FILE_DIR:proxy_maker>)
 
 add_custom_command(TARGET proxy_maker POST_BUILD
@@ -126,8 +138,6 @@ add_custom_command(TARGET proxy_maker POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         $<TARGET_FILE_DIR:proxy_maker>
         "${PROJECT_SOURCE_DIR}/release/bin/")
-
-
         
 
 target_link_libraries (proxy_maker 

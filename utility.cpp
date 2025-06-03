@@ -1,9 +1,10 @@
 #include "utility.h"
 #include <iostream>
+#include <stdio.h>
 
 bool IsImageExt(std::filesystem::path const &ext)
 {
-    return ext == ".jpg" || ext == ".png" || ext == ".jpeg";
+    return ext == ".jpg" || ext == ".png" || ext == ".jpeg" || ext == ".tiff";
 }
 
 std::string FromWstring(std::wstring const &wide)
@@ -43,7 +44,7 @@ bool RunCommand(std::string const &command, bool quiet)
     char psBuffer[128];
     FILE *pPipe;
 
-    if ((pPipe = _popen(command.c_str(), "rt")) == NULL)
+    if ((pPipe = popen(command.c_str(), "rt")) == NULL)
         return false;
 
     if (!quiet)
@@ -56,7 +57,7 @@ bool RunCommand(std::string const &command, bool quiet)
     int result = 0;
     if (feof(pPipe))
     {
-        result = _pclose(pPipe);
+        result = pclose(pPipe);
         if (!quiet)
             std::cout << "\nProcess returned "
                       << result << std::endl;

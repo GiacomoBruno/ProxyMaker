@@ -2,24 +2,36 @@
 #include "configuration.h"
 #include "image_processing.h"
 #include "pdf_generation.h"
+#include "scryfall.h"
 
 using namespace PDFHummus;
 
 
-int wmain(int argc, wchar_t **argv)
+int main(int argc, char **argv)
 {
-    Configuration conf{};
-    conf.LoadConfiguration(FILES_FOLDER CONFIG_FILE);
+    WorkFolder wf;
+    wf.WF = std::filesystem::absolute(argv[1]);
 
-    auto out = std::filesystem::absolute(CROP_FOLDER);
+
+    Configuration conf{};
+    std::cout << "WF: " << wf.WF << std::endl;
+    std::cout << "WFa: " << std::filesystem::absolute(wf.WF) << std::endl;
+    conf.LoadConfiguration(wf.Get(FILES_FOLDER).string() + CONFIG_FILE);
+    conf.WF = wf;
+    auto out = wf.Get(CROP_FOLDER);
+    std::cout << "RESET CROP_FOLDER: " << out <<std::endl;
+
     if (std::filesystem::exists(out))
         std::filesystem::remove_all(out);
     std::filesystem::create_directory(out);
+    std::cout << "END RESET CROP_FOLDER" <<std::endl;
 
-    CropImages(conf, LoadImages(IMAGE_FOLDER), CROP_FOLDER);
+    DownloadList(wf.Get(FILES_FOLDER).string() + "card_list.txt");
+    
+    CropImages(conf, LoadImages(wf.Get(IMAGE_FOLDER)), wf.Get(CROP_FOLDER));
     ResizeScryfallImages(conf);
-    GeneratePDF(conf, LoadImages(CROP_FOLDER), conf.GetOutputFile());
-    conf.SaveConfiguration(FILES_FOLDER CONFIG_FILE);
+    GeneratePDF(conf, LoadImages(wf.Get(CROP_FOLDER)), wf.Get(conf.GetOutputFile().c_str()));
+    conf.SaveConfiguration(wf.Get(FILES_FOLDER).string() + CONFIG_FILE);
     int wait;
     std::cin >> wait;
 }
