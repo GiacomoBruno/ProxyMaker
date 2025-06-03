@@ -1,6 +1,7 @@
 #include "utility.h"
 #include <iostream>
 #include <stdio.h>
+#include <algorithm>
 
 bool IsImageExt(std::filesystem::path const &ext)
 {

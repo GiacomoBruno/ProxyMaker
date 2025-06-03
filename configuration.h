@@ -4,7 +4,7 @@
 #include <iostream>
 #include "PDFWriter/PageContentContext.h"
 #include "paper.h"
-
+#include <math.h>
 //everything in inches becasue MTG is U.S. based (sigh.)
 
 #define FILES_FOLDER "/files/"

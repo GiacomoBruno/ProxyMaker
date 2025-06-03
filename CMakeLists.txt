@@ -49,7 +49,16 @@ FetchContent_Declare(
 )
 
 FetchContent_Populate(ESRGAN_MAC)
+
 FetchContent_Declare(
+    ESRGAN_UBUNTU
+    URL https://github.com/xinntao/Real-ESRGAN-ncnn-vulkan/releases/download/v0.2.0/realesrgan-ncnn-vulkan-v0.2.0-ubuntu.zip
+    DOWNLOAD_EXTRACT_TIMESTAMP FALSE
+)
+
+FetchContent_Populate(ESRGAN_UBUNTU)
+
+FetchContent_Declare( 
     ThreadPool
     GIT_REPOSITORY https://github.com/bshoshany/thread-pool.git
     DOWNLOAD_EXTRACT_TIMESTAMP FALSE
@@ -117,12 +126,17 @@ add_custom_command(TARGET proxy_maker POST_BUILD
 add_custom_command(TARGET proxy_maker POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy
     "${PROJECT_SOURCE_DIR}/build/_deps/esrgan-src/realesrgan-ncnn-vulkan.exe"
-    $<TARGET_FILE_DIR:proxy_maker>)
+    $<TARGET_FILE_DIR:proxy_maker>/realesrgan_win.exe)
 
 add_custom_command(TARGET proxy_maker POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy
     "${PROJECT_SOURCE_DIR}/build/_deps/esrgan_mac-src/realesrgan-ncnn-vulkan"
-    $<TARGET_FILE_DIR:proxy_maker>)
+    $<TARGET_FILE_DIR:proxy_maker>/realesrgan_mac)
+
+add_custom_command(TARGET proxy_maker POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+    "${PROJECT_SOURCE_DIR}/build/_deps/esrgan_ubuntu-src/realesrgan-ncnn-vulkan"
+    $<TARGET_FILE_DIR:proxy_maker>/realesrgan_ubuntu)
 
 add_custom_command(TARGET proxy_maker POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy
