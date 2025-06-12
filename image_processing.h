@@ -4,6 +4,10 @@
 #include "utility.h"
 #include "configuration.h"
 
-void CropImages(Configuration const &conf, std::vector<std::filesystem::path> const &images, std::filesystem::path const &output_folder);
+void CropImages(Configuration const &conf, std::vector<path> const &images, path const &output_folder);
 
-void ResizeScryfallImages(Configuration const& conf);
+bool Upscale(Configuration const &conf, path const &input, path const &output);
+
+void FillEmptySpaces(path const &input);
+
+void AddBleed(Configuration const& conf, path const& input, path const& output);

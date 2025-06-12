@@ -2,7 +2,11 @@
 #include "magic_enum.hpp"
 #include "json.h"
 
+#include <filesystem>
+
 using enum PAPER;
+
+constexpr double InchToMM(double inch) { return inch * 25.4; } 
 
 double Configuration::GetCardW(bool doPPU) const
 {
@@ -92,8 +96,30 @@ std::string Configuration::GetOutputFile() const
     return OutputFile;
 }
 
-void Configuration::LoadConfiguration(std::filesystem::path const &confFile)
+path Configuration::GetWorkDir() const
 {
+    return WorkFolder;
+}
+path Configuration::GetDir(path const& d) const
+{
+    return WorkFolder + d;
+}
+
+void Configuration::SetWorkDir(path const& d )
+{
+    WorkFolder = d;
+}
+
+void Configuration::LoadConfiguration()
+{
+    auto confFile = GetDir(FILES_FOLDER CONFIG_FILE);
+
+    if(!std::filesystem::exists(GetDir(FILES_FOLDER)))
+    {
+        std::filesystem::create_directory(GetDir(FILES_FOLDER));
+        return;
+    }
+
     if (std::filesystem::exists(confFile) && std::filesystem::is_regular_file(confFile))
     {
         std::ifstream file{confFile};
@@ -113,8 +139,9 @@ void Configuration::LoadConfiguration(std::filesystem::path const &confFile)
     }
 }
 
-void Configuration::SaveConfiguration(std::filesystem::path const &confFile)
+void Configuration::SaveConfiguration()
 {
+    auto confFile = GetDir(FILES_FOLDER CONFIG_FILE);
     std::ofstream file{confFile};
     RSJresource json{"{\"Unit\": MM }"};
 
@@ -132,4 +159,61 @@ void Configuration::SaveConfiguration(std::filesystem::path const &confFile)
     json["output_file"] = OutputFile;
     file << json.as_str();
     file.close();
+}
+
+PageConfiguration::PageConfiguration(Configuration const& conf) {
+        PH = conf.GetPaperH() - conf.GetVerticalOffset();
+        PW = conf.GetPaperW() - conf.GetHorizontalOffset();
+
+        {
+            auto tot_cards_1 = (int)floor(PW / conf.GetCardWithBleedW()) * (int)floor(PH / conf.GetCardWithBleedH());
+            auto tot_cards_2 = (int)floor(PW / conf.GetCardWithBleedH()) * (int)floor(PH / conf.GetCardWithBleedW());
+            if (tot_cards_2 > tot_cards_1)
+            {
+                PH = conf.GetPaperW() - conf.GetHorizontalOffset();
+                PW = conf.GetPaperH() - conf.GetVerticalOffset();
+            }
+        }
+
+        Cols = (int)floor(PW / conf.GetCardW());
+        Rows = (int)floor(PH / conf.GetCardH());
+
+        CardsPerPage = Cols * Rows;
+        Options.boundingBoxHeight = conf.GetCardWithBleedH();
+        Options.boundingBoxWidth = conf.GetCardWithBleedW();
+        Options.transformationMethod = AbstractContentContext::EImageTransformation::eFit;
+        Options.fitPolicy = AbstractContentContext::EFitPolicy::eAlways;
+
+        std::cout << "PPI:" << (conf.GetPPI()) << std::endl;
+        std::cout << "PDF: " << (PW>PH ? "Landscape" : "Portrait") << " orientation" << "[" << Cols << "x" << Rows << "]" << std::endl;
+        std::cout << "CARD:" << "[" << conf.GetCardW() << "x" << conf.GetCardH() << "]" << " MM[" << InchToMM(conf.GetCardW(false)) <<"x"<< InchToMM(conf.GetCardH(false)) << "]" << std::endl;
+        std::cout << "BBOX: " << "[" << Options.boundingBoxWidth << "x" << Options.boundingBoxHeight << "]" << " MM[" << InchToMM(Options.boundingBoxWidth/conf.GetPPI()) <<"x"<< InchToMM(Options.boundingBoxHeight/conf.GetPPI()) << "]" << std::endl;
+    }
+
+
+void prepare_directories(path const& work_folder)
+{
+    if(!std::filesystem::exists(work_folder + FILES_FOLDER))
+        std::filesystem::create_directory(work_folder +  FILES_FOLDER);
+
+    if(!std::filesystem::exists(work_folder +  IMAGE_FOLDER))
+        std::filesystem::create_directory(work_folder +  IMAGE_FOLDER);
+
+    if(!std::filesystem::exists(work_folder + CROP_FOLDER))
+        std::filesystem::create_directory(work_folder +  CROP_FOLDER);
+
+    if(!std::filesystem::exists(work_folder +  SCRYFALL_FOLDER))
+        std::filesystem::create_directory(work_folder +  SCRYFALL_FOLDER);
+}
+
+Configuration prepare_configuration(char const* work_folder)
+{
+    Configuration conf{};
+    std::cout << work_folder << std::endl;
+    conf.SetWorkDir(work_folder);
+    conf.LoadConfiguration();
+
+
+    prepare_directories(work_folder);
+    return conf;
 }

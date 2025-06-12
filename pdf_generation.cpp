@@ -5,7 +5,9 @@
 #include <iostream>
 #include <thread>
 #include <vector>
+#include <filesystem>
 #include "BS_thread_pool.hpp"
+
 
 #define SyncOut std::osyncstream{std::cout}
 
@@ -40,10 +42,10 @@ void DrawCross(Configuration const &conf, PageContentContext *cxt, double center
 
 }
 
-void GeneratePage(Configuration const &conf, PageConfiguration const& pConf, int idx, std::vector<std::filesystem::path> const& images)
+void GeneratePage(Configuration const &conf, PageConfiguration const& pConf, int idx, std::vector<path> const& images)
 {
     PDFWriter pdfWriter;
-    pdfWriter.StartPDF(conf.WF.Get(FILES_FOLDER).string()+std::to_string(idx)+".pdf", ePDFVersion13, LogConfiguration(false, nullptr));
+    pdfWriter.StartPDF(conf.GetDir(FILES_FOLDER + std::to_string(idx)+".pdf"), ePDFVersion13, LogConfiguration(false, nullptr));
 
     auto page = new PDFPage();
     page->SetMediaBox(PDFRectangle(0, 0, pConf.PW + conf.GetHorizontalOffset(), pConf.PH + conf.GetVerticalOffset()));
@@ -63,7 +65,7 @@ void GeneratePage(Configuration const &conf, PageConfiguration const& pConf, int
         double x = center_x - (conf.GetCardWithBleedW() / 2.);
         double y = center_y - (conf.GetCardWithBleedH() / 2.);
 
-        cxt->DrawImage(x, y, im.string(), pConf.Options);
+        cxt->DrawImage(x, y, im, pConf.Options);
         if (conf.GetDrawCross())
             DrawCross(conf, cxt, center_x, center_y);
 
@@ -74,13 +76,27 @@ void GeneratePage(Configuration const &conf, PageConfiguration const& pConf, int
     pdfWriter.EndPDF();
 }
 
-void GeneratePDF(Configuration const &conf, std::vector<std::filesystem::path> const &images, std::string const &filename)
+void GeneratePDF(Configuration const &conf, std::vector<path> &images, std::string const &filename)
 {
     std::cout << "Generating PDF: " << filename << std::endl;
     int idx = 0;
     PageConfiguration pageConf{conf};
-    std::vector<std::filesystem::path> batch{};
+    std::vector<path> batch{};
     BS::thread_pool pool{12};
+    std::vector<path> toAdd{};
+    for(int i = 0; i < images.size(); i++)
+    {
+        auto inPrintList = conf.PrintList.find(std::filesystem::path(images[i]).filename().string());
+
+        if(inPrintList != conf.PrintList.end() && inPrintList->second > 1)
+        {
+            for(int j = 0; j < inPrintList->second - 1; j++)
+                toAdd.push_back(images[i]);
+        }
+    }
+
+    images.insert(images.end(), toAdd.begin(), toAdd.end());
+
     for(int i = 0; i < images.size(); i++)
     {
         batch.push_back(images[i]);
@@ -100,8 +116,8 @@ void GeneratePDF(Configuration const &conf, std::vector<std::filesystem::path> c
     pdfWriter.StartPDF(filename, ePDFVersion13);
     for(int i = 0; i < idx; i++)
     {
-        pdfWriter.AppendPDFPagesFromPDF(conf.WF.Get(FILES_FOLDER).string() + std::to_string(i)+".pdf",PDFPageRange());
-        std::filesystem::remove(conf.WF.Get(FILES_FOLDER).string()+ std::to_string(i)+".pdf");
+        pdfWriter.AppendPDFPagesFromPDF(conf.GetDir(FILES_FOLDER + std::to_string(i)+".pdf"),PDFPageRange());
+        std::filesystem::remove(conf.GetDir(FILES_FOLDER+ std::to_string(i)+".pdf"));
     }
     pdfWriter.EndPDF(); //unite all generated pdfs
     std::cout << "PDF generation complete!" << std::endl;

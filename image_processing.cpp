@@ -9,7 +9,17 @@
 #define SyncOut \
     std::osyncstream { std::cout }
 
-void CropImages(Configuration const &conf, std::vector<std::filesystem::path> const &images, std::filesystem::path const &output_folder)
+#ifdef __linux__ 
+#define REALESRGAN "realesrgan_ubuntu"
+#elif _WIN32
+#define REALESRGAN "realesrgan_win.exe"
+#elif __APPLE__
+#define REALESRGAN "realesrgan_mac"
+#else
+#define REALESRGAN ""
+#endif
+
+void CropImages(Configuration const &conf, std::vector<path> const &images, path const &output_folder)
 {
     std::vector<std::thread> threads{};
     auto out = std::filesystem::absolute(output_folder);
@@ -19,7 +29,7 @@ void CropImages(Configuration const &conf, std::vector<std::filesystem::path> co
         std::ignore = pool.submit_task(
             [conf, p, out]()
             {
-                cv::Mat img = cv::imread(p.string());
+                cv::Mat img = cv::imread(p);
                 auto w = img.size().width;
                 auto h = img.size().height;
 
@@ -30,7 +40,7 @@ void CropImages(Configuration const &conf, std::vector<std::filesystem::path> co
                 toCrop *= imageDPI;
 
                 cv::Mat cropped_image = img(cv::Range(toCrop, h - toCrop), cv::Range(toCrop, w - toCrop));
-                auto cropped = out / p.filename();
+                auto cropped = out / std::filesystem::path(p).filename();
                 cv::imwrite(cropped.string(), cropped_image);
             });
     }
@@ -38,21 +48,27 @@ void CropImages(Configuration const &conf, std::vector<std::filesystem::path> co
     pool.wait();
 }
 
-bool Upscale(Configuration const &conf, std::filesystem::path const &input, std::filesystem::path const &output)
+bool Upscale(Configuration const &conf, path const &input, path const &output)
 {
-    auto command = std::format("{}realesrgan-ncnn-vulkan -i {} -o {} -s 2 -m .{} -n {}",
-                                conf.WF.Get(BIN_FOLDER).string(),
-                                std::filesystem::absolute(input).string(), std::filesystem::absolute(output).string(), MODELS_FOLDER, "realesr-animevideov3");
+    auto command = std::format("{}{} -i {} -o {} -s 2 -m {} -n {}",
+                                conf.GetDir(BIN_FOLDER), REALESRGAN,
+                                std::filesystem::absolute(input).string(), std::filesystem::absolute(output).string(), conf.GetDir(MODELS_FOLDER), "realesr-animevideov3");
 
-    return RunCommand(command);
+    return RunCommand(command, true);
 }
 
-void FillEmptySpaces(std::filesystem::path const &input)
+void FillEmptySpaces(path const &input)
 {
     for (auto image : LoadImages(input))
     {
-        auto i = cv::imread(image.string());
+        auto i = cv::imread(image);
         uint8_t *pixelPtr = (uint8_t *)i.data;
+        if(pixelPtr == nullptr)
+        {
+            std::cout << "failed to read image: " << image << std::endl;
+            return;
+        }
+
         int pos = 20;
         if (pixelPtr[0] == pixelPtr[1] && pixelPtr[1] == pixelPtr[2] && pixelPtr[1] == 255)
         {
@@ -73,37 +89,22 @@ void FillEmptySpaces(std::filesystem::path const &input)
 
             bot.copyTo(d3);
             bot.copyTo(d4);
-            cv::imwrite((input / image.filename()).string(), i);
+            cv::imwrite(image, i);
         }
     }
 }
 
-void ResizeScryfallImages(Configuration const &conf)
+void AddBleed(Configuration const& conf, path const& input, path const& output)
 {
-    auto scryfall_folder = conf.WF.Get(SCRYFALL_INPUT_FOLDER);
-    auto scryfall_upscaled_folder = conf.WF.Get(SCRYFALL_UPSCALED_FOLDER);
-    auto scryfall_bleeded_folder = conf.WF.Get(SCRYFALL_BLEEDED_FOLDER);
-    FillEmptySpaces(scryfall_folder);
-
-    if (std::filesystem::exists(scryfall_upscaled_folder))
-        std::filesystem::remove_all(scryfall_upscaled_folder);
-    std::filesystem::create_directory(scryfall_upscaled_folder);
-
-    if (!Upscale(conf, scryfall_folder, scryfall_upscaled_folder))
-        return;
-
-    if (std::filesystem::exists(scryfall_bleeded_folder))
-        std::filesystem::remove_all(scryfall_bleeded_folder);
-
-    std::filesystem::create_directory(scryfall_bleeded_folder);
-
-    auto images = LoadImages(scryfall_upscaled_folder);
     BS::thread_pool pool{12};
-    for (auto image : images)
+    for (auto image : LoadImages(input))
     {
-        std::ignore = pool.submit_task([image, &conf, &scryfall_bleeded_folder]()
+        std::ignore = pool.submit_task([image, &conf, &output]()
                                        {
-            auto i = cv::imread(image.string());
+
+            if(std::filesystem::exists(output + std::filesystem::path(image).filename().string())) return;
+            
+            auto i = cv::imread(image);
             auto dpi = std::min(i.size().width / conf.GetCardW(false), i.size().height / conf.GetCardH(false));
             int pixels_to_add = (int)std::floor(std::min(conf.GetFullBleedW(false) - conf.GetCardW(false), conf.GetFullBleedH(false) - conf.GetCardH(false)) * dpi);
             pixels_to_add += pixels_to_add % 2;
@@ -136,10 +137,8 @@ void ResizeScryfallImages(Configuration const &conf)
                 side2_to_copy.copyTo(side2_dest);
             }
 
-            cv::imwrite(scryfall_bleeded_folder.string() + image.filename().string(), img); });
+            cv::imwrite(output + std::filesystem::path(image).filename().string(), img); });
     }
 
     pool.wait();
-
-    CropImages(conf, LoadImages(scryfall_bleeded_folder), CROP_FOLDER);
 }
