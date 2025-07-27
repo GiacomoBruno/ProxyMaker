@@ -1,4 +1,5 @@
 #include "utility.h"
+#include "uuid.h"
 #include <iostream>
 #include <stdio.h>
 #include <algorithm>
@@ -21,7 +22,7 @@ std::string FromWstring(std::wstring const &wide)
     return str;
 }
 
-std::vector<path> LoadImages(path const &folder)
+std::vector<path> LoadImages(path const &folder, bool rename)
 {
     std::vector<path> res{};
     if (!std::filesystem::exists(folder))
@@ -30,17 +31,29 @@ std::vector<path> LoadImages(path const &folder)
     {
         if (std::filesystem::is_regular_file(p) && IsImageExt(p.path().extension()))
         {
-            #ifdef __WIN32__
-            auto sb = p.path().filename().wstring();
-            auto new_path = folder + FromWstring(sb);
-            std::filesystem::rename(p, new_path);
-            res.push_back(new_path);
-            #else
-            res.push_back(folder + p.path().filename().string());
-            #endif
-            
+            res.push_back(p);
         }
     }
+
+    if(rename)
+    {
+        std::random_device rd;
+        auto seed_data = std::array<int, std::mt19937::state_size> {};
+        std::generate(std::begin(seed_data), std::end(seed_data), std::ref(rd));
+        std::seed_seq seq(std::begin(seed_data), std::end(seed_data));
+        std::mt19937 generator(seq);
+        uuids::uuid_random_generator gen{generator};
+        for(auto& p : res)
+        {
+            auto uuid = uuids::to_string(gen());
+            auto old_path = p;
+            p.replace_filename(uuid + p.extension().string());
+            std::filesystem::rename(old_path, p);
+
+            std::cout << p.string() << std::endl;
+        }
+    }
+
     return res;
 }
 
@@ -96,4 +109,9 @@ void PrepareDirectory(path const& dir, bool clean)
     }
 
     
+}
+
+double GetPrintSize(double size, double dpi)
+{
+    return size/*mm*/ * 0.0393701 * dpi;
 }

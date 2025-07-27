@@ -33,9 +33,9 @@ void CropImages(Configuration const &conf, std::vector<path> const &images, path
                 auto w = img.size().width;
                 auto h = img.size().height;
 
-                auto imageDPI = std::min(w / conf.GetFullBleedW(false), h / conf.GetFullBleedH(false));
-                auto toCrop = std::min(conf.GetFullBleedW(false) - conf.GetCardW(false), conf.GetFullBleedH(false) - conf.GetCardH(false));
-                toCrop -= (conf.GetBleed(false) * 2);
+                auto imageDPI = std::min(w / GetFullCardW(conf), h / GetFullCardH(conf));
+                auto toCrop = std::min(GetFullCardW(conf) - GetCardW(conf), GetFullCardH(conf) - GetCardH(conf));
+                toCrop -= (GetCardBleed(conf) * 2);
                 toCrop /= 2.;
                 toCrop *= imageDPI;
 
@@ -51,8 +51,8 @@ void CropImages(Configuration const &conf, std::vector<path> const &images, path
 bool Upscale(Configuration const &conf, path const &input, path const &output)
 {
     auto command = std::format("{}{} -i {} -o {} -s 2 -m {} -n {}",
-                                conf.GetDir(BIN_FOLDER), REALESRGAN,
-                                std::filesystem::absolute(input).string(), std::filesystem::absolute(output).string(), conf.GetDir(MODELS_FOLDER), "realesr-animevideov3");
+                                conf.GetDir(BIN_FOLDER).string(), REALESRGAN,
+                                std::filesystem::absolute(input).string(), std::filesystem::absolute(output).string(), conf.GetDir(MODELS_FOLDER).string(), "realesr-animevideov3");
 
     return RunCommand(command, true);
 }
@@ -102,11 +102,13 @@ void AddBleed(Configuration const& conf, path const& input, path const& output)
         std::ignore = pool.submit_task([image, &conf, &output]()
                                        {
 
-            if(std::filesystem::exists(output + std::filesystem::path(image).filename().string())) return;
+            if(std::filesystem::exists(output.string() + std::filesystem::path(image).filename().string())) return;
             
             auto i = cv::imread(image);
-            auto dpi = std::min(i.size().width / conf.GetCardW(false), i.size().height / conf.GetCardH(false));
-            int pixels_to_add = (int)std::floor(std::min(conf.GetFullBleedW(false) - conf.GetCardW(false), conf.GetFullBleedH(false) - conf.GetCardH(false)) * dpi);
+
+            //todo add inch to mm conversions.
+            auto dpi = std::min(i.size().width / GetCardW(conf), i.size().height / GetCardH(conf));
+            int pixels_to_add = (int)std::floor(std::min(GetFullCardW(conf) - GetCardW(conf), GetFullCardH(conf) - GetCardH(conf)) * dpi);
             pixels_to_add += pixels_to_add % 2;
             auto new_w = i.size().width + pixels_to_add;
             auto new_h = i.size().height + pixels_to_add;
@@ -137,7 +139,7 @@ void AddBleed(Configuration const& conf, path const& input, path const& output)
                 side2_to_copy.copyTo(side2_dest);
             }
 
-            cv::imwrite(output + std::filesystem::path(image).filename().string(), img); });
+            cv::imwrite(output.string() + std::filesystem::path(image).filename().string(), img); });
     }
 
     pool.wait();

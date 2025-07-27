@@ -11,82 +11,138 @@
 
 #define SyncOut std::osyncstream{std::cout}
 
-void DrawCross(Configuration const &conf, PageContentContext *cxt, double center_x, double center_y)
+void DrawCross(Configuration const &conf, PageContentContext *cxt, double _x, double _y)
 {
     AbstractContentContext::GraphicOptions gOptions{};
     gOptions.colorValue = 0x00FF00;
     gOptions.drawingType = AbstractContentContext::EDrawingType::eFill;
+ 
+    auto margin = GetPrintSize(GetMargin(conf), 72);
+    auto hMargin = margin /2.;
+    auto cW = GetPrintSize(GetCardW(conf), 72) + margin;
+    auto cH = GetPrintSize(GetCardH(conf), 72) + margin;
+    auto cMW = GetPrintSize(GetMarginCardW(conf), 72) - margin;
+    auto cMH = GetPrintSize(GetMarginCardH(conf), 72) - margin;
+    auto x = _x + hMargin;
+    auto y = _y + hMargin;
 
-    auto x = center_x - (conf.GetCardW()/2.);
-    auto y = center_y - (conf.GetCardH()/2.);
-    auto x1 = x + conf.GetCardW();
-    auto y1 = y + conf.GetCardH();
+    cxt->DrawRectangle(_x      , _y      , margin, margin, gOptions);
+    cxt->DrawRectangle(_x + cMW, _y      , margin, margin, gOptions);
+    cxt->DrawRectangle(_x      , _y + cMH, margin, margin, gOptions);
+    cxt->DrawRectangle(_x + cMW, _y + cMH, margin, margin, gOptions);
 
-    auto t = conf.GetCrossThickness();
-    auto l = conf.GetCrossLength();
+    cxt->DrawRectangle(x, y, cW - hMargin, hMargin, gOptions);//_____
+    cxt->DrawRectangle(x, y + cH - hMargin, cW, hMargin, gOptions);//-------
 
-    auto botx = x - t;
-    auto boty = y - t;
-   
-    cxt->DrawRectangle(botx - (l/2.), boty, l, t, gOptions);
-    cxt->DrawRectangle(botx, boty - (l/2.), t, l, gOptions);
-
-    cxt->DrawRectangle(botx - (l/2.), y1, l, t, gOptions);
-    cxt->DrawRectangle(botx, y1 - (l/2.), t, l, gOptions);
-
-    cxt->DrawRectangle(x1 - (l/2.), boty, l, t, gOptions);
-    cxt->DrawRectangle(x1, boty - (l/2.), t, l, gOptions);
-
-    cxt->DrawRectangle(x1 - (l/2.), y1, l, t, gOptions);
-    cxt->DrawRectangle(x1, y1 - (l/2.), t, l, gOptions);
-
+    cxt->DrawRectangle(x,      y, hMargin, cH, gOptions);
+    cxt->DrawRectangle(x + cW-hMargin, y, hMargin, cH, gOptions);
 }
 
-void GeneratePage(Configuration const &conf, PageConfiguration const& pConf, int idx, std::vector<path> const& images)
+std::tuple<int, int, int> GetPageStats(Configuration const& conf, Paper& p)
+{
+    auto cW = GetMarginCardW(conf);
+    auto cH = GetMarginCardH(conf);
+
+    int cpr = floor(p.W / cW);
+    int cpc = floor(p.H / cH);
+
+    int cprl = floor(p.H / cW);
+    int cpcl = floor(p.W / cH);
+
+    if((cpr*cpc) < (cprl * cpcl))
+    {
+        auto tmp = p.W;
+        p.W = p.H;
+        p.H = tmp;
+    }
+    
+    cpr = floor(p.W / cW);
+    cpc = floor(p.H / cH);
+    
+    int cpp = cpr * cpc;
+    return std::make_tuple(cpr, cpc, cpp);
+}
+
+void GeneratePage(Configuration const &conf, int idx, std::vector<Card> const& cards)
 {
     PDFWriter pdfWriter;
     pdfWriter.StartPDF(conf.GetDir(FILES_FOLDER + std::to_string(idx)+".pdf"), ePDFVersion13, LogConfiguration(false, nullptr));
 
     auto page = new PDFPage();
-    page->SetMediaBox(PDFRectangle(0, 0, pConf.PW + conf.GetHorizontalOffset(), pConf.PH + conf.GetVerticalOffset()));
+    Paper p = GetPaper(conf.GetPaperType());
 
-    auto cxt = pdfWriter.StartPageContentContext(page);      
+    page->SetMediaBox(PDFRectangle(0, 0, GetPrintSize(p.W, 72), GetPrintSize(p.H, 72)));
+    
+    auto cxt = pdfWriter.StartPageContentContext(page);
+
+    //for simplicity at the moment all Cards have the same size.
+    //later we can change that.
+    AbstractContentContext::ImageOptions Options;
+    Options.boundingBoxHeight = GetPrintSize(GetMarginCardH(conf), 72);
+    Options.boundingBoxWidth = GetPrintSize(GetMarginCardW(conf), 72);
+    Options.transformationMethod = AbstractContentContext::EImageTransformation::eFit;
+    Options.fitPolicy = AbstractContentContext::EFitPolicy::eAlways;
+
+    auto [cpr,cpc, cpp] = GetPageStats(conf, p);
+    auto mCardW = GetPrintSize(GetMarginCardW(conf), 72);
+    auto mCardH = GetPrintSize(GetMarginCardH(conf), 72);
+
+    double xOffset = (GetPrintSize(p.W, 72) / 2.) - (cpr * mCardW / 2.);
+    double yOffset = (GetPrintSize(p.H, 72) / 2.) - (cpr * mCardH / 2.);
 
     int i = 0;
-    for(auto &im : images)
+    for(auto &im : cards)
     {
         //print stuff
-        auto row = ((i % pConf.CardsPerPage) / pConf.Cols);
-        auto col = ((i % pConf.CardsPerPage) % pConf.Cols);
+        auto row = ((i % cpp) / cpr);
+        auto col = ((i % cpp) % cpr);
 
-        double center_x = pConf.PW / pConf.Cols * (1 + 2 * col) / 2. + (conf.GetHorizontalOffset() / 2.);
-        double center_y = pConf.PH / pConf.Rows * (1 + 2 * row) / 2. + (conf.GetVerticalOffset() / 2.);
+        double x = (col * mCardW)+ xOffset;
+        double y = (row * mCardH)+ yOffset;
 
-        double x = center_x - (conf.GetCardWithBleedW() / 2.);
-        double y = center_y - (conf.GetCardWithBleedH() / 2.);
+        double center_x = x + (mCardW / 2.);
+        double center_y = y + (mCardH / 2.);
 
-        cxt->DrawImage(x, y, im, pConf.Options);
-        if (conf.GetDrawCross())
-            DrawCross(conf, cxt, center_x, center_y);
+        cxt->DrawImage(x, y, im.ImageFile.string(), Options);
+        
 
         i++;
     }
+
+    for(int row = 0; row < cpc; row++)
+    {
+        for(int col = 0; col < cpr; col++)
+        {
+            double x = (col * mCardW)+ xOffset;
+        double y = (row * mCardH)+ yOffset;
+
+        double center_x = x + (mCardW / 2.);
+        double center_y = y + (mCardH / 2.);
+        DrawCross(conf, cxt, x, y);
+        }
+    }
+   
     pdfWriter.EndPageContentContext(cxt);
     pdfWriter.WritePageAndRelease(page);
     pdfWriter.EndPDF();
 }
 
-void GeneratePDF(Configuration const &conf, std::vector<path> &images, std::string const &filename)
+void GeneratePDF(Configuration const &conf, std::vector<Card> &images, std::filesystem::path const &filename)
 {
-    std::cout << "Generating PDF: " << filename << std::endl;
+    std::cout << "Generating PDF: " << filename.string() << std::endl;
     int idx = 0;
-    PageConfiguration pageConf{conf};
-    std::vector<path> batch{};
+    std::vector<Card> batch{};
     BS::thread_pool pool{12};
-    std::vector<path> toAdd{};
+    std::vector<Card> toAdd{};
+
+    std::cout<<"CardH: " << GetPrintSize(GetCardH(conf), 72) << std::endl;
+    std::cout<<"CardW: " << GetPrintSize(GetCardW(conf), 72) << std::endl;
+    std::cout<<"CardMH" << GetPrintSize(GetMarginCardH(conf), 72) << std::endl;
+    std::cout << "CardMW" << GetPrintSize(GetMarginCardW(conf), 72) << std::endl;
+
     for(int i = 0; i < images.size(); i++)
     {
-        auto inPrintList = conf.PrintList.find(std::filesystem::path(images[i]).filename().string());
+        auto inPrintList = conf.PrintList.find(images[i].ImageFile.filename().string());
 
         if(inPrintList != conf.PrintList.end() && inPrintList->second > 1)
         {
@@ -95,15 +151,17 @@ void GeneratePDF(Configuration const &conf, std::vector<path> &images, std::stri
         }
     }
 
+    Paper p = GetPaper(conf.GetPaperType());
+    auto [cpr, cpc, cpp] = GetPageStats(conf, p);
     images.insert(images.end(), toAdd.begin(), toAdd.end());
 
     for(int i = 0; i < images.size(); i++)
     {
         batch.push_back(images[i]);
 
-        if(((i+1)%pageConf.CardsPerPage == 0 && i > 0) || (i == images.size()-1))
+        if(((i+1)%cpp == 0 && i > 0) || (i == images.size()-1))
         {
-            std::ignore = pool.submit_task([&conf, &pageConf, batch, idx](){ GeneratePage(conf, pageConf, idx, batch);});
+            std::ignore = pool.submit_task([&conf, batch, idx](){ GeneratePage(conf, idx, batch);});
             idx++;
             batch.clear();
         }

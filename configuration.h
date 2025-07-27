@@ -10,70 +10,42 @@
 #include <unordered_map>
 //everything in inches becasue MTG is U.S. based (sigh.)
 
-#define FILES_FOLDER "/files/"
-#define BIN_FOLDER "/bin/"
-#define IMAGE_FOLDER FILES_FOLDER "images/"
-#define CROP_FOLDER IMAGE_FOLDER "crop/"
-#define SCRYFALL_FOLDER IMAGE_FOLDER "scryfall/"
-#define SCRYFALL_INPUT_FOLDER SCRYFALL_FOLDER "input/"
-#define SCRYFALL_UPSCALED_FOLDER SCRYFALL_FOLDER "upscaled/"
-#define SCRYFALL_BLED_FOLDER SCRYFALL_FOLDER "bled/"
-#define MODELS_FOLDER FILES_FOLDER "models/"
+#ifdef __WIN32__
+#define STR_PREFIX L
+#else 
+#define STR_PREFIX 
+#endif
 
-#define CONFIG_FILE "config.json"
-#define SCRYFALL_FILE "card_list.txt"
-#define TMP_FILE "tmpfile.tmp"
+#define FILES_FOLDER STR_PREFIX"/files/"
+#define BIN_FOLDER STR_PREFIX"/bin/"
+#define IMAGE_FOLDER FILES_FOLDER STR_PREFIX"images/"
+#define CROP_FOLDER IMAGE_FOLDER STR_PREFIX"crop/"
+#define SCRYFALL_FOLDER IMAGE_FOLDER STR_PREFIX"scryfall/"
+#define SCRYFALL_INPUT_FOLDER SCRYFALL_FOLDER STR_PREFIX"input/"
+#define SCRYFALL_UPSCALED_FOLDER SCRYFALL_FOLDER STR_PREFIX"upscaled/"
+#define SCRYFALL_BLED_FOLDER SCRYFALL_FOLDER STR_PREFIX"bled/"
+#define MODELS_FOLDER FILES_FOLDER STR_PREFIX"models/"
 
-
-
-struct CardMeasures
-{
-    double SafeW{};
-    double SafeH{};
-    double AdditionalSafe{};
-    double BleedSize{};
-    double FullBleedSizeW{};
-    double FullBleedSizeH{};
-
-};
-
-
-constexpr CardMeasures MeasuresMPCFill{.SafeW = 2.48, .SafeH = 3.49, .AdditionalSafe = 0.00, .BleedSize = 0.03, .FullBleedSizeW = 2.74, .FullBleedSizeH = 3.74};
+#define CONFIG_FILE STR_PREFIX"config.json"
+#define SCRYFALL_FILE STR_PREFIX"card_list.txt"
+#define TMP_FILE STR_PREFIX"tmpfile.tmp"
 
 struct Configuration
 {
 private:
-    PAPER PaperType{PAPER::A4};
-    CardMeasures CardSize{MeasuresMPCFill};
-    int VerticalOffsetPX{0};
-    int HorizontalOffsetPX{0};
+    PAPER PaperType{PAPER::eA4};
+    CardSizes CardSize{MPCFillCard};
     bool DrawCross{true};
-    double PPI{300.};
-    double CrossThickness{0.01};
-    double CrossLength{0.1};
-    std::string OutputFile{FILES_FOLDER"output.pdf"};
-    std::string WorkFolder{};
+    double PPI{72.};
+    std::filesystem::path OutputFile{FILES_FOLDER STR_PREFIX"output.pdf"};
+    std::filesystem::path WorkFolder{};
     
 public:
-    void LoadConfiguration();
-    void SaveConfiguration();
-
-    double GetCardW(bool ppu = true) const;
-    double GetCardH(bool ppu = true) const;
-    double GetCardWithBleedW(bool ppu = true) const;
-    double GetCardWithBleedH(bool ppu = true) const;
-    double GetPaperW(bool ppu = true) const;
-    double GetPaperH(bool ppu = true) const;
-    double GetBleed(bool ppu = true) const;
-    double GetFullBleedW(bool ppu = true) const;
-    double GetFullBleedH(bool ppu = true) const; 
-    int GetVerticalOffset() const;
-    int GetHorizontalOffset() const;
+    CardSizes const& GetCardSize() const;
+    PAPER GetPaperType() const;
     bool GetDrawCross() const;
-    double GetCrossThickness(bool ppu = true) const;
-    double GetCrossLength(bool ppu = true) const;
     double GetPPI() const;
-    std::string GetOutputFile() const;
+    std::filesystem::path GetOutputFile() const;
     path GetWorkDir() const;
     path GetDir(path const&) const;
     void SetWorkDir(path const&);
@@ -83,16 +55,11 @@ public:
 
 Configuration prepare_configuration(char const* work_folder);
 
-
-
-struct PageConfiguration
-{
-    PageConfiguration(Configuration const& conf);
-
-    int CardsPerPage{};
-    int Rows{};
-    int Cols{};
-    double PW{};
-    double PH{};
-    AbstractContentContext::ImageOptions Options{};
-};
+double GetCardW(Configuration const& c);
+double GetCardH(Configuration const& c);
+double GetFullCardW(Configuration const& c);
+double GetFullCardH(Configuration const& c);
+double GetCardBleed(Configuration const& c);
+double GetMarginCardW(Configuration const& c);
+double GetMarginCardH(Configuration const& c);
+double GetMargin(Configuration const& c);

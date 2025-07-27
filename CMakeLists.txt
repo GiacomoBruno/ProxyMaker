@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.16)
 project(proxy_maker)
 
+include(homebrew.cmake)
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -17,46 +19,21 @@ FetchContent_Declare(
   FIND_PACKAGE_ARGS
 )
 FetchContent_MakeAvailable(PDFHummus)
+set(OpenCV_DIR "/opt/homebrew/Cellar/opencv/4.12.0/lib/cmake/opencv4/")
+find_package(OpenCV REQUIRED)
 
-FetchContent_Declare(
-        opencv
-        QUIET
-        GIT_REPOSITORY https://github.com/opencv/opencv.git
-        GIT_TAG 4.11.0
-)
-FetchContent_MakeAvailable(opencv)
+message(STATUS "OpenCV library status:")
+message(STATUS "    config: ${OpenCV_DIR}")
+message(STATUS "    version: ${OpenCV_VERSION}")
+message(STATUS "    libraries: ${OpenCV_LIBS}")
+message(STATUS "    include path: ${OpenCV_INCLUDE_DIRS}")
 
 FetchContent_Declare(
         magic_enum
         GIT_REPOSITORY https://github.com/Neargye/magic_enum.git
 )
 
-FetchContent_Populate(magic_enum)
-
-FetchContent_Declare(
-    ESRGAN
-    URL https://github.com/xinntao/Real-ESRGAN-ncnn-vulkan/releases/download/v0.2.0/realesrgan-ncnn-vulkan-v0.2.0-windows.zip
-    DOWNLOAD_EXTRACT_TIMESTAMP FALSE
-
-)
-
-FetchContent_Populate(ESRGAN)
-
-FetchContent_Declare(
-    ESRGAN_MAC
-    URL https://github.com/xinntao/Real-ESRGAN-ncnn-vulkan/releases/download/v0.2.0/realesrgan-ncnn-vulkan-v0.2.0-macos.zip
-    DOWNLOAD_EXTRACT_TIMESTAMP FALSE
-)
-
-FetchContent_Populate(ESRGAN_MAC)
-
-FetchContent_Declare(
-    ESRGAN_UBUNTU
-    URL https://github.com/xinntao/Real-ESRGAN-ncnn-vulkan/releases/download/v0.2.0/realesrgan-ncnn-vulkan-v0.2.0-ubuntu.zip
-    DOWNLOAD_EXTRACT_TIMESTAMP FALSE
-)
-
-FetchContent_Populate(ESRGAN_UBUNTU)
+FetchContent_MakeAvailable(magic_enum)
 
 FetchContent_Declare( 
     ThreadPool
@@ -64,7 +41,7 @@ FetchContent_Declare(
     DOWNLOAD_EXTRACT_TIMESTAMP FALSE
 )
 
-FetchContent_Populate(ThreadPool)
+FetchContent_MakeAvailable(ThreadPool)
 
 add_executable(proxy_maker)
 
@@ -72,10 +49,10 @@ target_sources(proxy_maker
         PRIVATE ${PROJECT_SOURCE_DIR}/main.cpp
         PRIVATE ${PROJECT_SOURCE_DIR}/utility.cpp
         PRIVATE ${PROJECT_SOURCE_DIR}/configuration.cpp
-        PRIVATE ${PROJECT_SOURCE_DIR}/paper.cpp
         PRIVATE ${PROJECT_SOURCE_DIR}/image_processing.cpp
         PRIVATE ${PROJECT_SOURCE_DIR}/pdf_generation.cpp
-        PRIVATE ${PROJECT_SOURCE_DIR}/scryfall.cpp
+        PRIVATE ${PROJECT_SOURCE_DIR}/paper.cpp
+        PRIVATE ${PROJECT_SOURCE_DIR}/card.cpp
 )
 
 target_include_directories(proxy_maker 
@@ -123,31 +100,6 @@ add_custom_command(TARGET proxy_maker POST_BUILD
         "${PROJECT_SOURCE_DIR}/build/_deps/pdfhummus-build/Zlib/"
         $<TARGET_FILE_DIR:proxy_maker>)
         
-add_custom_command(TARGET proxy_maker POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy
-    "${PROJECT_SOURCE_DIR}/build/_deps/esrgan-src/realesrgan-ncnn-vulkan.exe"
-    $<TARGET_FILE_DIR:proxy_maker>/realesrgan_win.exe)
-
-add_custom_command(TARGET proxy_maker POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy
-    "${PROJECT_SOURCE_DIR}/build/_deps/esrgan_mac-src/realesrgan-ncnn-vulkan"
-    $<TARGET_FILE_DIR:proxy_maker>/realesrgan_mac)
-
-add_custom_command(TARGET proxy_maker POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy
-    "${PROJECT_SOURCE_DIR}/build/_deps/esrgan_ubuntu-src/realesrgan-ncnn-vulkan"
-    $<TARGET_FILE_DIR:proxy_maker>/realesrgan_ubuntu)
-
-add_custom_command(TARGET proxy_maker POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy
-    "${PROJECT_SOURCE_DIR}/build/_deps/esrgan-src/vcomp140.dll"
-    $<TARGET_FILE_DIR:proxy_maker>)
-
-add_custom_command(TARGET proxy_maker POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy
-    "${PROJECT_SOURCE_DIR}/build/_deps/esrgan-src/vcomp140d.dll"
-    $<TARGET_FILE_DIR:proxy_maker>)
-
 add_custom_command(TARGET proxy_maker POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         $<TARGET_FILE_DIR:proxy_maker>

@@ -1,13 +1,23 @@
 #include "paper.h"
 
-using enum PAPER;
 
-double Paper::GetPaperW(double ppu, bool doPPU) const
+double GetTotalCardWidth(CardSizes const& s)
 {
-    return W * (doPPU ? ppu : 1);
+    return s.Width + s.Bleed + s.Bleed;
+}
+double GetTotalCardHeight(CardSizes const& s)
+{
+    return s.Height + s.Bleed + s.Bleed;
 }
 
-double Paper::GetPaperH(double ppu, bool doPPU) const
+Paper GetPaper(PAPER p)
 {
-    return H * (doPPU ? ppu : 1);
+    switch(p)
+    {
+        case PAPER::eA4:
+            return pA4;
+        case PAPER::e10_15:
+            return p10x15;
+    }
+    return {};
 }

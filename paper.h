@@ -2,25 +2,30 @@
 
 enum class PAPER
 {
-    A4,
-    A5,
-    A6,
-    _10_15,
-    _13_18,
+    eA4,
+    e10_15
 };
 
 struct Paper
 {
-    const double W{8.3};
-    const double H{11.7};
-
-    double GetPaperW(double ppu, bool doPPU = true) const;
-    double GetPaperH(double ppu, bool doPPU = true) const;
-
+    double W{210};
+    double H{297};
 };
 
-constexpr Paper A4_Paper{.W = 8.3,.H = 11.7};
-constexpr Paper A5_Paper{.W=5.8,.H =8.3};
-constexpr Paper A6_Paper{.W=4.1,.H=5.8};
-constexpr Paper _10_15_Paper{.W=3.9370,.H=5.90551};
-constexpr Paper _13_18_Paper{.W=5.,.H=7.};
+struct CardSizes
+{
+    double Width{};
+    double Height{};
+    double Margin{};
+    double Bleed{};
+};
+
+Paper GetPaper(PAPER p);
+
+double GetTotalCardWidth(CardSizes const& s);
+double GetTotalCardHeight(CardSizes const& s);
+
+
+constexpr CardSizes MPCFillCard{.Width = 63, .Height = 88, .Margin = 1, .Bleed = 3.35};
+constexpr Paper pA4{ .W = 210, .H = 297};
+constexpr Paper p10x15{ .W= 100, .H= 150};

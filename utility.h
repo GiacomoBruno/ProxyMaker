@@ -4,14 +4,14 @@
 #include <string>
 #include <filesystem>
 
-using path = std::string;
+using path = std::filesystem::path;
 
 bool IsImageExt(path const &ext);
 
-std::string FromWstring(std::wstring const &wide);
-
-std::vector<path> LoadImages(path const &folder);
+std::vector<path> LoadImages(path const &folder, bool rename = false);
 
 bool RunCommand(std::string const& command, bool quiet = true);
 
 void PrepareDirectory(path const& dir, bool clean = true);
+
+double GetPrintSize(double size, double dpi);
