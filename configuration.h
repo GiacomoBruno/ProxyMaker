@@ -8,42 +8,40 @@
 #include <string>
 #include <iostream>
 #include <unordered_map>
+#include <mutex>
 //everything in inches becasue MTG is U.S. based (sigh.)
 
-#ifdef __WIN32__
-#define STR_PREFIX L
+#ifdef WIN32
+#define STR_PREFIX(s) L##s
+#define tostr(i) std::to_wstring(i)
 #else 
 #define STR_PREFIX 
+#define tostr(i) std::to_string(i)
 #endif
 
-#define FILES_FOLDER STR_PREFIX"/files/"
-#define BIN_FOLDER STR_PREFIX"/bin/"
-#define IMAGE_FOLDER FILES_FOLDER STR_PREFIX"images/"
-#define CROP_FOLDER IMAGE_FOLDER STR_PREFIX"crop/"
-#define SCRYFALL_FOLDER IMAGE_FOLDER STR_PREFIX"scryfall/"
-#define SCRYFALL_INPUT_FOLDER SCRYFALL_FOLDER STR_PREFIX"input/"
-#define SCRYFALL_UPSCALED_FOLDER SCRYFALL_FOLDER STR_PREFIX"upscaled/"
-#define SCRYFALL_BLED_FOLDER SCRYFALL_FOLDER STR_PREFIX"bled/"
-#define MODELS_FOLDER FILES_FOLDER STR_PREFIX"models/"
-
-#define CONFIG_FILE STR_PREFIX"config.json"
-#define SCRYFALL_FILE STR_PREFIX"card_list.txt"
-#define TMP_FILE STR_PREFIX"tmpfile.tmp"
+#define FILES_FOLDER STR_PREFIX("/files/")
+#define BIN_FOLDER STR_PREFIX("/bin/")
+#define IMAGE_FOLDER FILES_FOLDER STR_PREFIX("images/")
+#define IMAGE_INPUT IMAGE_FOLDER STR_PREFIX("input/")
+#define IMAGE_FULL_INPUT IMAGE_FOLDER STR_PREFIX("fullart/")
+#define UNPADDED_IMAGE_INPUT IMAGE_FOLDER STR_PREFIX("to_pad_input")
+#define CROP_FOLDER IMAGE_FOLDER STR_PREFIX("crop/")
+#define TMP_FILE STR_PREFIX("tmpfile.tmp")
 
 struct Configuration
 {
 private:
     PAPER PaperType{PAPER::eA4};
     CardSizes CardSize{MPCFillCard};
-    bool DrawCross{true};
     double PPI{72.};
-    std::filesystem::path OutputFile{FILES_FOLDER STR_PREFIX"output.pdf"};
+    std::filesystem::path OutputFile{FILES_FOLDER STR_PREFIX("output.pdf")};
     std::filesystem::path WorkFolder{};
     
+    mutable std::vector<std::filesystem::path> GeneratedFiles{};
+    mutable std::mutex* m_mutex{new std::mutex};
 public:
     CardSizes const& GetCardSize() const;
     PAPER GetPaperType() const;
-    bool GetDrawCross() const;
     double GetPPI() const;
     std::filesystem::path GetOutputFile() const;
     path GetWorkDir() const;
@@ -51,6 +49,11 @@ public:
     void SetWorkDir(path const&);
 
     std::unordered_map<path, int> PrintList{};
+    void AddGeneratedFile(std::filesystem::path const&) const;
+    void Cleanup() const;
+
+    friend void PrintConfiguration(Configuration const& conf);
+    friend void UpdateConfiguration(Configuration& conf);
 };
 
 Configuration prepare_configuration(char const* work_folder);
@@ -63,3 +66,5 @@ double GetCardBleed(Configuration const& c);
 double GetMarginCardW(Configuration const& c);
 double GetMarginCardH(Configuration const& c);
 double GetMargin(Configuration const& c);
+
+

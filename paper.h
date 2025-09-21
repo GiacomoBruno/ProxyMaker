@@ -26,6 +26,8 @@ double GetTotalCardWidth(CardSizes const& s);
 double GetTotalCardHeight(CardSizes const& s);
 
 
-constexpr CardSizes MPCFillCard{.Width = 63, .Height = 88, .Margin = 1, .Bleed = 3.35};
+constexpr CardSizes MPCFillCard{.Width = 63, .Height = 88, .Margin = 1, .Bleed = 3.048};
+constexpr CardSizes HalfSizeCard{.Width = 88/2, .Height = 63, .Margin = 1, .Bleed = 3.048};
+
 constexpr Paper pA4{ .W = 210, .H = 297};
-constexpr Paper p10x15{ .W= 100, .H= 150};
+constexpr Paper p10x15{ .W= 100, .H= 150}; 

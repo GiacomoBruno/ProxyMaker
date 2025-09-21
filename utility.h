@@ -8,7 +8,7 @@ using path = std::filesystem::path;
 
 bool IsImageExt(path const &ext);
 
-std::vector<path> LoadImages(path const &folder, bool rename = false);
+std::vector<path> LoadImages(path const &folder, bool rename = false, bool recurse = false);
 
 bool RunCommand(std::string const& command, bool quiet = true);
 

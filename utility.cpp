@@ -22,18 +22,33 @@ std::string FromWstring(std::wstring const &wide)
     return str;
 }
 
-std::vector<path> LoadImages(path const &folder, bool rename)
+std::vector<path> LoadImages(path const &folder, bool rename, bool recurse)
 {
     std::vector<path> res{};
     if (!std::filesystem::exists(folder))
         return {};
-    for (auto p : std::filesystem::directory_iterator{folder})
+
+    if(recurse)
     {
-        if (std::filesystem::is_regular_file(p) && IsImageExt(p.path().extension()))
+        for (auto p : std::filesystem::recursive_directory_iterator{folder})
+            {
+                if (std::filesystem::is_regular_file(p) && IsImageExt(p.path().extension()))
+                {
+                    res.push_back(p);
+                }
+            }
+    }
+    else
+    {
+        for (auto p : std::filesystem::directory_iterator{folder})
         {
-            res.push_back(p);
+            if (std::filesystem::is_regular_file(p) && IsImageExt(p.path().extension()))
+            {
+                res.push_back(p);
+            }
         }
     }
+    
 
     if(rename)
     {
@@ -45,12 +60,12 @@ std::vector<path> LoadImages(path const &folder, bool rename)
         uuids::uuid_random_generator gen{generator};
         for(auto& p : res)
         {
-            auto uuid = uuids::to_string(gen());
-            auto old_path = p;
-            p.replace_filename(uuid + p.extension().string());
-            std::filesystem::rename(old_path, p);
-
-            std::cout << p.string() << std::endl;
+            if(p.filename().native().size() != 40){
+                auto uuid = uuids::to_string(gen());
+                auto old_path = p;
+                p.replace_filename(uuid + p.extension().string());
+                std::filesystem::rename(old_path, p);
+            }
         }
     }
 
@@ -75,7 +90,7 @@ bool RunCommand(std::string const &command, bool quiet)
         char psBuffer[128];
         FILE *pPipe;
 
-        if ((pPipe = popen(command.c_str(), "r")) == NULL)
+        if ((pPipe = _popen(command.c_str(), "r")) == NULL)
             return false;
 
         
@@ -87,7 +102,7 @@ bool RunCommand(std::string const &command, bool quiet)
 
         if (feof(pPipe))
         {
-            result = pclose(pPipe);
+            result = _pclose(pPipe);
             std::cout << "\nProcess returned " << result << std::endl;
         }
     }

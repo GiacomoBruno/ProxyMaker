@@ -19,7 +19,16 @@ FetchContent_Declare(
   FIND_PACKAGE_ARGS
 )
 FetchContent_MakeAvailable(PDFHummus)
-set(OpenCV_DIR "/opt/homebrew/Cellar/opencv/4.12.0/lib/cmake/opencv4/")
+set(OpenCV_DIR "$ENV{VCPKG_ROOT}/installed/x64-windows/share/opencv4/")
+set(Protobuf_DIR "$ENV{VCPKG_ROOT}/installed/x64-windows/share/protobuf/")
+set(quirc_DIR "$ENV{VCPKG_ROOT}/installed/x64-windows/share/quirc/")
+set(absl_DIR "$ENV{VCPKG_ROOT}/installed/x64-windows/share/absl/")
+set(utf8_range_DIR "$ENV{VCPKG_ROOT}/installed/x64-windows/share/utf8_range/")
+set(TIFF_INCLUDE_DIR "$ENV{VCPKG_ROOT}/installed/x64-windows/include")
+set(TIFF_LIBRARY "$ENV{VCPKG_ROOT}/installed/x64-windows/lib/tiff.lib")
+find_package(TIFF)
+find_package(TIFF REQUIRED)
+
 find_package(OpenCV REQUIRED)
 
 message(STATUS "OpenCV library status:")
@@ -67,37 +76,37 @@ PRIVATE ${PROJECT_SOURCE_DIR}/build/_deps/threadpool-src/include/
 
 add_custom_command(TARGET proxy_maker POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${PROJECT_SOURCE_DIR}/build/_deps/pdfhummus-build/PDFWriter/"
+        "${PROJECT_SOURCE_DIR}/build/_deps/pdfhummus-build/PDFWriter/$<$<CONFIG:Debug>:Debug>"
         $<TARGET_FILE_DIR:proxy_maker>)
 
 add_custom_command(TARGET proxy_maker POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${PROJECT_SOURCE_DIR}/build/_deps/pdfhummus-build/FreeType/"
+        "${PROJECT_SOURCE_DIR}/build/_deps/pdfhummus-build/FreeType/$<$<CONFIG:Debug>:Debug>"
         $<TARGET_FILE_DIR:proxy_maker>)
 
 add_custom_command(TARGET proxy_maker POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${PROJECT_SOURCE_DIR}/build/_deps/pdfhummus-build/LibAesgm/"
+        "${PROJECT_SOURCE_DIR}/build/_deps/pdfhummus-build/LibAesgm/$<$<CONFIG:Debug>:Debug>"
         $<TARGET_FILE_DIR:proxy_maker>)
 
 add_custom_command(TARGET proxy_maker POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${PROJECT_SOURCE_DIR}/build/_deps/pdfhummus-build/LibJpeg/"
+        "${PROJECT_SOURCE_DIR}/build/_deps/pdfhummus-build/LibJpeg/$<$<CONFIG:Debug>:Debug>"
         $<TARGET_FILE_DIR:proxy_maker>)
 
 add_custom_command(TARGET proxy_maker POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${PROJECT_SOURCE_DIR}/build/_deps/pdfhummus-build/LibPng/"
+        "${PROJECT_SOURCE_DIR}/build/_deps/pdfhummus-build/LibPng/$<$<CONFIG:Debug>:Debug>"
         $<TARGET_FILE_DIR:proxy_maker>)
 
 add_custom_command(TARGET proxy_maker POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${PROJECT_SOURCE_DIR}/build/_deps/pdfhummus-build/LibTiff/"
+        "${PROJECT_SOURCE_DIR}/build/_deps/pdfhummus-build/LibTiff/$<$<CONFIG:Debug>:Debug>"
         $<TARGET_FILE_DIR:proxy_maker>)
 
 add_custom_command(TARGET proxy_maker POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${PROJECT_SOURCE_DIR}/build/_deps/pdfhummus-build/Zlib/"
+        "${PROJECT_SOURCE_DIR}/build/_deps/pdfhummus-build/Zlib/$<$<CONFIG:Debug>:Debug>"
         $<TARGET_FILE_DIR:proxy_maker>)
         
 add_custom_command(TARGET proxy_maker POST_BUILD
