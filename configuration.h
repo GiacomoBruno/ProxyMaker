@@ -34,6 +34,7 @@ private:
     PAPER PaperType{PAPER::eA4};
     CardSizes CardSize{MPCFillCard};
     double PPI{72.};
+    int16_t Spacing = 0u;
     std::filesystem::path OutputFile{FILES_FOLDER STR_PREFIX("output.pdf")};
     std::filesystem::path WorkFolder{};
     
@@ -44,6 +45,7 @@ public:
     PAPER GetPaperType() const;
     double GetPPI() const;
     std::filesystem::path GetOutputFile() const;
+    int16_t GetSpacing() const;
     path GetWorkDir() const;
     path GetDir(path const&) const;
     void SetWorkDir(path const&);

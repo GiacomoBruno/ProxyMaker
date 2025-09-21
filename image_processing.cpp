@@ -28,9 +28,9 @@ double ColorShift(cv::Point3_<uchar> c1, cv::Point3_<uchar> c2)
 
 void CropImages(Configuration const &conf, std::vector<path> const &images, path const &output_folder, bool fullart)
 {
-    std::vector<std::thread> threads{};
+    std::vector<std::thread> threads{12};
     auto out = std::filesystem::absolute(output_folder);
-    BS::thread_pool pool{12};
+    BS::thread_pool pool{1};
     for (auto const &p : images)
     {
         std::ignore = pool.submit_task(
@@ -115,7 +115,6 @@ void CropImages(Configuration const &conf, std::vector<path> const &images, path
                         toCropTop = GetPrintSize(GetCardBleed(conf) - dif - GetMargin(conf), imageDPI);
                     }
 
-
                     if(side_border > 3.1) //border is either 2.5mm (modern card), or 3.5mm (old cards)
                     {
                         auto dif = 3.1 - side_border;
@@ -127,6 +126,11 @@ void CropImages(Configuration const &conf, std::vector<path> const &images, path
                         toCropTop = GetPrintSize(GetCardBleed(conf) - dif - GetMargin(conf), imageDPI);
                     }
                 }
+
+                if(toCropTop < 0)
+                    toCropTop = toCrop;
+                if(toCropSide < 0)
+                    toCropSide = toCrop;
                 cv::Mat cropped_image = img(cv::Range(toCropTop, h - toCropTop), cv::Range(toCropSide, w - toCropSide));
                 auto cropped = out / std::filesystem::path(p).filename();
                 cv::imwrite(cropped.string(), cropped_image);

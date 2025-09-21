@@ -51,7 +51,7 @@ void prepare_directories(path const &work_folder)
 
     if (!std::filesystem::exists(work_folder.native() + UNPADDED_IMAGE_INPUT))
         std::filesystem::create_directory(work_folder.native() + UNPADDED_IMAGE_INPUT);
-    
+
     if (!std::filesystem::exists(work_folder.native() + CROP_FOLDER))
         std::filesystem::create_directory(work_folder.native() + CROP_FOLDER);
 }
@@ -91,6 +91,11 @@ PAPER Configuration::GetPaperType() const
     return PaperType;
 }
 
+int16_t Configuration::GetSpacing() const
+{
+    return Spacing;
+}
+
 double GetMarginCardW(Configuration const &c)
 {
     auto cs = c.GetCardSize();
@@ -116,6 +121,7 @@ void PrintConfiguration(Configuration const &conf)
     std::cout << std::format("\tCARD_SIZE: [{}]x[{}] - MARGIN[{}] - BLEED[{}]\n", conf.CardSize.Width, conf.CardSize.Height, conf.CardSize.Margin, conf.CardSize.Bleed);
     std::cout << std::format("\tPPI: {}\n", conf.PPI);
     std::cout << std::format("\tOUTPUT_FILE: {}\n", conf.OutputFile.string());
+    std::cout << std::format("\tSPACING: {}\n", conf.Spacing);
 }
 
 void UpdateConfiguration(Configuration &conf)
@@ -123,7 +129,7 @@ void UpdateConfiguration(Configuration &conf)
     bool done = false;
     while (!done)
     {
-        std::cout << std::format("Customize:\n\t1. PAPER_TYPE, \n\t2. CARD_SIZE, \n\t3. PPI, \n\t4. OUTPUT_FILE, \n\t5. DONE\n");
+        std::cout << std::format("Customize:\n\t1. PAPER_TYPE, \n\t2. CARD_SIZE, \n\t3. PPI, \n\t4. OUTPUT_FILE, \n\t5. SPACING, \n\t6. DONE\n");
         int input = 0;
 
         std::cin >> input;
@@ -184,6 +190,14 @@ void UpdateConfiguration(Configuration &conf)
         }
         case 5:
         {
+            std::cout << "Spacing: ";
+            int spacing = 0;
+            std::cin >> spacing;
+            conf.Spacing = spacing;
+            break;
+        }
+        case 6:
+        {
             done = true;
             break;
         }
@@ -193,21 +207,22 @@ void UpdateConfiguration(Configuration &conf)
     }
 }
 
-void Configuration::AddGeneratedFile(std::filesystem::path const& f) const
+void Configuration::AddGeneratedFile(std::filesystem::path const &f) const
 {
     std::unique_lock l{*m_mutex};
     GeneratedFiles.push_back(f);
-
 }
 void Configuration::Cleanup() const
 {
-    {std::unique_lock l{*m_mutex};
-    for(auto& f: GeneratedFiles)
     {
-        std::cout << "attempt to delete: " << f.string() << std::endl; 
-        if(std::filesystem::exists(f))
-            std::filesystem::remove(f);
+        std::unique_lock l{*m_mutex};
+        for (auto &f : GeneratedFiles)
+        {
+            std::cout << "attempt to delete: " << f.string() << std::endl;
+            if (std::filesystem::exists(f))
+                std::filesystem::remove(f);
+        }
+        GeneratedFiles.clear();
     }
-    GeneratedFiles.clear();}
     delete m_mutex;
 }

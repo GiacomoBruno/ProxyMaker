@@ -162,23 +162,22 @@ void GeneratePage(Configuration const &conf, int idx, std::vector<Card> const &c
     auto mCardW = floor(GetPrintSize(GetMarginCardW(conf), 72));
     auto mCardH = floor(GetPrintSize(GetMarginCardH(conf), 72));
 
+    uint16_t spacing = conf.GetSpacing();
 
     int xOffset = floor((GetPrintSize(p.W, 72) / 2.) - (cpr * mCardW / 2.));
     int yOffset = floor((GetPrintSize(p.H, 72) / 2.) - (cpc * mCardH / 2.));
 
     int i = 0;
+    auto mid_col = cpc/2;
+    auto mid_row = cpr/2;
     for (auto &im : cards)
     {
         // print stuff
         auto row = ((i % cpp) / cpr);
         auto col = ((i % cpp) % cpr);
 
-        int x = (col * mCardW) + xOffset;
-        int y = (row * mCardH) + yOffset;
-
-        int center_x = x + (mCardW / 2);
-        int center_y = y + (mCardH / 2);
-
+        int x = (col * mCardW) + xOffset + (spacing * (col - mid_col));
+        int y = (row * mCardH) + yOffset + (spacing * (row - mid_row));
         cxt->DrawImage(x, y, im.ImageFile.string(), Options);
 
         i++;
@@ -188,8 +187,8 @@ void GeneratePage(Configuration const &conf, int idx, std::vector<Card> const &c
     {
         for (int col = 0; col < cpr; col++)
         {
-            int x = (col * mCardW) + xOffset;
-            int y = (row * mCardH) + yOffset;
+            int x = (col * mCardW) + xOffset + (spacing * (col - mid_col));
+            int y = (row * mCardH) + yOffset + (spacing * (row - mid_row));
 
             int center_x = x + (mCardW / 2);
             int center_y = y + (mCardH / 2);
