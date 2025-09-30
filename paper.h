@@ -27,6 +27,8 @@ double GetTotalCardHeight(CardSizes const& s);
 
 
 constexpr CardSizes MPCFillCard{.Width = 63, .Height = 88, .Margin = 1, .Bleed = 3.048};
+constexpr CardSizes MPCFillCardForSilhouette{.Width = 63, .Height = 88, .Margin = 0.5, .Bleed = 3.048};
+
 constexpr CardSizes HalfSizeCard{.Width = 88/2, .Height = 63, .Margin = 1, .Bleed = 3.048};
 
 constexpr Paper pA4{ .W = 210, .H = 297};

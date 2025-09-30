@@ -96,11 +96,22 @@ int16_t Configuration::GetSpacing() const
     return Spacing;
 }
 
+bool Configuration::GetDrawCutLines() const
+{
+    return DrawCutLines;
+}
+
 double GetMarginCardW(Configuration const &c)
 {
     auto cs = c.GetCardSize();
     return cs.Width + cs.Margin + cs.Margin;
 }
+
+bool Configuration::GetUseSilhouetteTemplate() const
+{
+    return UseSilhouetteTemplate;
+}
+
 
 double GetMarginCardH(Configuration const &c)
 {
@@ -122,6 +133,7 @@ void PrintConfiguration(Configuration const &conf)
     std::cout << std::format("\tPPI: {}\n", conf.PPI);
     std::cout << std::format("\tOUTPUT_FILE: {}\n", conf.OutputFile.string());
     std::cout << std::format("\tSPACING: {}\n", conf.Spacing);
+    std::cout << std::format("\tSILHOUETTE: {}", conf.UseSilhouetteTemplate ? std::string("true") : std::string("false"));
 }
 
 void UpdateConfiguration(Configuration &conf)
@@ -129,7 +141,7 @@ void UpdateConfiguration(Configuration &conf)
     bool done = false;
     while (!done)
     {
-        std::cout << std::format("Customize:\n\t1. PAPER_TYPE, \n\t2. CARD_SIZE, \n\t3. PPI, \n\t4. OUTPUT_FILE, \n\t5. SPACING, \n\t6. DONE\n");
+        std::cout << std::format("Customize:\n\t1. PAPER_TYPE, \n\t2. CARD_SIZE, \n\t3. PPI, \n\t4. OUTPUT_FILE, \n\t5. SPACING, \n\t6. SILHOUETTE, \n\t7. DONE\n");
         int input = 0;
 
         std::cin >> input;
@@ -197,6 +209,16 @@ void UpdateConfiguration(Configuration &conf)
             break;
         }
         case 6:
+        {
+            conf.UseSilhouetteTemplate = !conf.UseSilhouetteTemplate;
+            //conf.PPI = 300;
+            conf.CardSize = MPCFillCardForSilhouette;
+            conf.Spacing = 0;
+            conf.DrawCutLines = false;
+            conf.PaperType = PAPER::eA4;
+            break;
+        }
+        case 7:
         {
             done = true;
             break;

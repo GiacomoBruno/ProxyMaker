@@ -27,6 +27,8 @@
 #define UNPADDED_IMAGE_INPUT IMAGE_FOLDER STR_PREFIX("to_pad_input")
 #define CROP_FOLDER IMAGE_FOLDER STR_PREFIX("crop/")
 #define TMP_FILE STR_PREFIX("tmpfile.tmp")
+#define TEMPLATES_FOLDER STR_PREFIX("/templates/")
+#define TEMPLATE TEMPLATES_FOLDER STR_PREFIX("a4_template.png")
 
 struct Configuration
 {
@@ -37,7 +39,9 @@ private:
     int16_t Spacing = 0u;
     std::filesystem::path OutputFile{FILES_FOLDER STR_PREFIX("output.pdf")};
     std::filesystem::path WorkFolder{};
-    
+    bool UseSilhouetteTemplate {false};
+    bool DrawCutLines{true};
+
     mutable std::vector<std::filesystem::path> GeneratedFiles{};
     mutable std::mutex* m_mutex{new std::mutex};
 public:
@@ -50,6 +54,8 @@ public:
     path GetDir(path const&) const;
     void SetWorkDir(path const&);
 
+    bool GetUseSilhouetteTemplate() const;
+    bool GetDrawCutLines() const;
     std::unordered_map<path, int> PrintList{};
     void AddGeneratedFile(std::filesystem::path const&) const;
     void Cleanup() const;
